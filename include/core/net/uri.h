@@ -33,9 +33,13 @@ namespace core
 {
 namespace net
 {
+/**
+ * @brief Models a uniform resource identifier as described in http://tools.ietf.org/html/rfc3986#page-23.
+ */
 class CORE_NET_DLL_PUBLIC Uri
 {
 public:
+    /** @brief Enumerates string-based components of a Uri. */
     enum class Tag
     {
         scheme,
@@ -46,6 +50,7 @@ public:
         fragment
     };
 
+    /** @brief A TaggedString is a string with additional semantics as implied by tag. */
     template<Tag tag>
     struct TaggedString
     {
@@ -87,10 +92,34 @@ public:
     template<typename T>
     using Optional = boost::optional<T>;
 
+    /**
+     * @brief Scheme wraps the scheme part of a Uri.
+     *
+     * Each URI begins with a scheme name that refers to a specification for
+     * assigning identifiers within that scheme.  As such, the URI syntax is
+     * a federated and extensible naming system wherein each scheme's
+     * specification may further restrict the syntax and semantics of
+     * identifiers using that scheme.
+     */
     typedef TaggedString<Tag::scheme> Scheme;
 
+    /**
+     * @brief The Authority struct encapsulates information about an entity owning a namespace.
+     *
+     * Many URI schemes include a hierarchical element for a naming
+     * authority so that governance of the name space defined by the
+     * remainder of the URI is delegated to that authority (which may, in
+     * turn, delegate it further).  The generic syntax provides a common
+     * means for distinguishing an authority based on a registered name or
+     * server address, along with optional port and user information.
+     */
     struct Authority
     {
+        /**
+         * The host subcomponent of authority is identified by an IP literal
+         * encapsulated within square brackets, an IPv4 address in dotted-
+         * decimal form, or a registered name.
+         */
         struct Host
         {
             typedef TaggedString<Tag::host_address> Address;
@@ -115,6 +144,12 @@ public:
             Optional<std::uint16_t> port = Optional<std::uint16_t>{};
         };
 
+        /** @brief UserInformation encapsulates username and optionally access credentials.
+         *
+         * The userinfo subcomponent may consist of a user name and, optionally,
+         * scheme-specific information about how to gain authorization to access
+         * the resource.
+         */
         typedef TaggedString<Tag::user_information> UserInformation;
 
         inline Authority(const Host& host = Host()) : host(host)
@@ -143,6 +178,12 @@ public:
         Host host;
     };
 
+    /**
+     * The path component contains data, usually organized in hierarchical
+     * form, that, along with data in the non-hierarchical query component
+     * (Section 3.4), serves to identify a resource within the scope of the
+     * URI's scheme and naming authority (if any).
+     */
     struct Path
     {
         typedef TaggedString<Tag::path_component> Component;        
@@ -168,13 +209,31 @@ public:
         std::vector<Component> components;
     };
 
+    /** @brief Bundles information required to describe access to a specific resource. */
     struct Hierarchical
     {
         Optional<Authority> authority;
         Optional<Path> path;
     };
 
+    /** @brief The optional query portion of a Uri.
+     *
+     * The query component contains non-hierarchical data that, along with
+     * data in the path component (Section 3.3), serves to identify a
+     * resource within the scope of the URI's scheme and naming authority
+     * (if any).
+     */
     typedef TaggedString<Tag::query> Query;
+
+    /** @brief The optional fragment portion of a Uri.
+     *
+     * The fragment identifier component of a URI allows indirect
+     * identification of a secondary resource by reference to a primary
+     * resource and additional identifying information.  The identified
+     * secondary resource may be some portion or subset of the primary
+     * resource, some view on representations of the primary resource, or
+     * some other resource defined or described by those representations.
+     */
     typedef TaggedString<Tag::fragment> Fragment;
 
     Uri& set(const Scheme& scheme)
@@ -216,6 +275,12 @@ public:
         return std::string();
     }
 
+    /**
+     * @brief Parses a Uri from the given string.
+     * @throw Errors::MalformedUri in case of errors.
+     * @param uri The uri in string representation.
+     * @return An instance of Uri if parsing succeeds.
+     */
     static Uri parse_from_string(const std::string& uri);
 
     Optional<Scheme> scheme;
