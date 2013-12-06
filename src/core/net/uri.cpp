@@ -22,7 +22,6 @@
 
 core::net::Uri core::net::Uri::parse_from_string(const std::string& uri)
 {
-    namespace qi = boost::spirit::qi;
     namespace ascii = boost::spirit::ascii;
 
     core::net::UriGrammar<std::string::const_iterator> grammar;
@@ -30,13 +29,27 @@ core::net::Uri core::net::Uri::parse_from_string(const std::string& uri)
     auto begin = uri.begin();
     auto end = uri.end();
 
-    if (!qi::phrase_parse(
-                uri.begin(),
-                uri.end(),
-                grammar,
-                ascii::space))
+    try
     {
-        throw std::runtime_error("Problem parsing, remaining string: " + std::string(begin, end));
+        core::net::Uri uri;
+        if (!boost::spirit::qi::phrase_parse(
+                    begin,
+                    end,
+                    grammar,
+                    ascii::space,
+                    uri
+                    ))
+        {
+            throw std::runtime_error("Problem parsing, remaining string: " + std::string(begin, end));
+        }
+
+        return uri;
+    } catch(const boost::spirit::qi::expectation_failure<std::string::const_iterator>& f)
+    {
+        std::stringstream ss;
+        ss << "An expectation of the parser has been violated:";
+        ss << "\t" << f.what_;
+        throw std::runtime_error{ss.str()};
     }
 
     return core::net::Uri();
