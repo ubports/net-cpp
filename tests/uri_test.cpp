@@ -28,27 +28,27 @@ TEST(Uri, default_constructed_uri_yields_empty_string)
 
 TEST(Uri, parsing_valid_url_from_string_works)
 {
-    auto uri = core::net::Uri::parse_from_string("http://www.google.com");
+    auto uri = core::net::Uri::from_string("http://www.google.com");
 }
 
 TEST(Uri, parsing_a_url_without_scheme_throws)
 {
-    EXPECT_ANY_THROW(auto uri = core::net::Uri::parse_from_string("www.google.com"));
+    EXPECT_ANY_THROW(auto uri = core::net::Uri::from_string("www.google.com"));
 }
 
 TEST(Uri, parsing_a_scheme_without_colon_throws)
 {
-    EXPECT_ANY_THROW(core::net::Uri::parse_from_string("http//www.google.com"));
+    EXPECT_ANY_THROW(core::net::Uri::from_string("http//www.google.com"));
 }
 
 TEST(Uri, parsing_a_raw_ipv4_address_works)
 {
-    auto uri = core::net::Uri::parse_from_string("http://192.168.0.1");
+    auto uri = core::net::Uri::from_string("http://192.168.0.1");
 }
 
 TEST(Uri, parsing_a_path_works)
 {
-    auto uri = core::net::Uri::parse_from_string("http://192.168.0.1/this/is/a/path");
+    auto uri = core::net::Uri::from_string("http://192.168.0.1/this/is/a/path");
     EXPECT_TRUE(uri.hierarchical.path);
     EXPECT_EQ(core::net::Uri::Path::Component{"this"}, uri.hierarchical.path.get().components[0]);
     EXPECT_EQ(core::net::Uri::Path::Component{"is"}, uri.hierarchical.path.get().components[1]);

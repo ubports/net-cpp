@@ -39,6 +39,20 @@ namespace net
 class CORE_NET_DLL_PUBLIC Uri
 {
 public:
+    struct Errors
+    {
+        Errors() = delete;
+
+        struct MalformedUri : public std::runtime_error
+        {
+            MalformedUri() : std::runtime_error("Malformed Uri")
+            {
+            }
+
+            // TODO(tvoss): Add more context to the exception in terms of what actually failed during parsing.
+        };
+    };
+
     /** @brief Enumerates string-based components of a Uri. */
     enum class Tag
     {
@@ -281,7 +295,7 @@ public:
      * @param uri The uri in string representation.
      * @return An instance of Uri if parsing succeeds.
      */
-    static Uri parse_from_string(const std::string& uri);
+    static Uri from_string(const std::string& uri);
 
     Optional<Scheme> scheme;
     Hierarchical hierarchical;

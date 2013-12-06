@@ -20,7 +20,7 @@
 
 #include "uri_grammar.h"
 
-core::net::Uri core::net::Uri::parse_from_string(const std::string& uri)
+core::net::Uri core::net::Uri::from_string(const std::string& uri)
 {
     namespace ascii = boost::spirit::ascii;
 
@@ -40,7 +40,7 @@ core::net::Uri core::net::Uri::parse_from_string(const std::string& uri)
                     uri
                     ))
         {
-            throw std::runtime_error("Problem parsing, remaining string: " + std::string(begin, end));
+            throw core::net::Uri::Errors::MalformedUri{};
         }
 
         return uri;
@@ -49,7 +49,7 @@ core::net::Uri core::net::Uri::parse_from_string(const std::string& uri)
         std::stringstream ss;
         ss << "An expectation of the parser has been violated:";
         ss << "\t" << f.what_;
-        throw std::runtime_error{ss.str()};
+        throw core::net::Uri::Errors::MalformedUri{};
     }
 
     return core::net::Uri();
