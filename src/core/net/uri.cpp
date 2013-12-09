@@ -52,5 +52,6 @@ core::net::Uri core::net::Uri::from_string(const std::string& uri)
         throw core::net::Uri::Errors::MalformedUri{};
     }
 
+    // Satisfying gcc's requirements here.
     return core::net::Uri();
 }

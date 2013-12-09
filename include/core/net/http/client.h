@@ -22,6 +22,7 @@
 
 #include <core/net/http/method.h>
 
+#include <iosfwd>
 #include <memory>
 
 namespace core
@@ -30,6 +31,7 @@ namespace net
 {
 namespace http
 {
+class ContentType;
 class Request;
 class CORE_NET_DLL_PUBLIC Client
 {
@@ -77,7 +79,7 @@ public:
      * @param uri The URI to issue a HEAD request for.
      * @return An executable instance of class Request.
      */
-    // virtual std::shared_ptr<Request> head(const std::string& uri) = 0;
+    virtual std::shared_ptr<Request> head(const std::string& uri) = 0;
 
     /**
      * @brief put is a convenience method for issuing a PUT request for the given URI.
@@ -86,7 +88,7 @@ public:
      * @param payload The data to be transmitted as part of the PUT request.
      * @return An executable instance of class Request.
      */
-    // virtual std::shared_ptr<Request> put(const std::string& uri, const std::string& payload) = 0;
+    virtual std::shared_ptr<Request> put(const std::string& uri, std::istream& payload, std::size_t size) = 0;
 
     /**
      * @brief post is a convenience method for issuing a POST request for the given URI.
@@ -95,7 +97,7 @@ public:
      * @param payload The data to be transmitted as part of the PUT request.
      * @return An executable instance of class Request.
      */
-    // virtual std::shared_ptr<Request> post(const std::string& uri, const std::string& payload) = 0;
+    virtual std::shared_ptr<Request> post(const std::string& uri, const std::string& payload, const ContentType& type) = 0;
 
 protected:
     Client() = default;

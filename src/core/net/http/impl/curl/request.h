@@ -49,14 +49,14 @@ public:
         Response result;
         std::stringstream body;
 
-        handle.on_data_function(
+        handle.on_write_data(
                     [&body](char* data, std::size_t size, std::size_t nmemb)
                     {
                         body.write(data, size * nmemb);
                         return size * nmemb;
                     });
 
-        handle.on_header_function(
+        handle.on_write_header(
                     [&result](void* data, std::size_t size, std::size_t nmemb)
                     {
                         const char* begin = static_cast<const char*>(data);

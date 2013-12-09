@@ -15,10 +15,10 @@
  *
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
-#ifndef CORE_NET_HTTP_IMPL_CURL_CLIENT_H_
-#define CORE_NET_HTTP_IMPL_CURL_CLIENT_H_
+#ifndef CORE_NET_HTTP_CONTENT_TYPE_H_
+#define CORE_NET_HTTP_CONTENT_TYPE_H_
 
-#include <core/net/http/client.h>
+#include <core/net/visibility.h>
 
 namespace core
 {
@@ -26,29 +26,31 @@ namespace net
 {
 namespace http
 {
-namespace impl
-{
-namespace curl
-{
-class Client : public core::net::http::Client
+class CORE_NET_DLL_PUBLIC ContentType
 {
 public:
-    Client();
+    inline ContentType(const std::string& value) : value(value)
+    {
+    }
 
-    // From core::net::http::Client
-    std::shared_ptr<Request> get(const std::string& uri);
+    const std::string& as_string() const
+    {
+        return value;
+    }
 
-    std::shared_ptr<Request> head(const std::string& uri);
+private:
+    std::string value;
 
-    std::shared_ptr<Request> post(const std::string& uri, const std::string&, const ContentType&);
-
-    std::shared_ptr<Request> put(const std::string& uri, std::istream& payload, std::size_t size);
+public:
+    static const ContentType x_www_form_urlencoded;
+    static const ContentType json;
+    static const ContentType xml;
+    static const ContentType html;
 };
-}
-}
-// Create an instance of a client implementation.
-std::shared_ptr<Client> make_client();
+
+const ContentType ContentType::json{"application/json"};
 }
 }
 }
-#endif // CORE_NET_HTTP_IMPL_CURL_CLIENT_H_
+
+#endif // CORE_NET_HTTP_CONTENT_TYPE_H_

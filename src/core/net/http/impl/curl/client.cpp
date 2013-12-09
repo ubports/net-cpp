@@ -29,12 +29,46 @@ http::impl::curl::Client::Client()
 {
 }
 
+std::shared_ptr<http::Request> http::impl::curl::Client::head(const std::string& uri)
+{
+    ::curl::easy::Handle handle;
+    handle.method(http::Method::head)
+            .url(uri.c_str());
+    return std::shared_ptr<http::Request>{new http::impl::curl::Request{handle}};
+}
+
 std::shared_ptr<http::Request> http::impl::curl::Client::get(const std::string& uri)
 {
-    ::curl::easy::Handle handle = ::curl::easy::Handle()
-            .method(http::Method::get)
+    ::curl::easy::Handle handle;
+    handle.method(http::Method::get)
             .url(uri.c_str());
-    handle.user_agent("lalelu");
+    return std::shared_ptr<http::Request>{new http::impl::curl::Request{handle}};
+}
+
+std::shared_ptr<http::Request> http::impl::curl::Client::post(const std::string& uri,
+                              const std::string& payload,
+                              const http::ContentType& ct)
+{
+    ::curl::easy::Handle handle;
+    handle.method(http::Method::post)
+            .url(uri.c_str())
+            .post_data(payload.c_str(), ct);
+    return std::shared_ptr<http::Request>{new http::impl::curl::Request{handle}};
+}
+
+std::shared_ptr<http::Request> http::impl::curl::Client::put(
+        const std::string& uri,
+        std::istream& payload,
+        std::size_t size)
+{
+    ::curl::easy::Handle handle;
+    handle.method(http::Method::put)
+            .url(uri.c_str())
+            .on_read_data([&payload, size](void* dest, std::size_t /*in_size*/, std::size_t /*nmemb*/)
+            {
+                auto result = payload.readsome(static_cast<char*>(dest), size);
+                return result;
+            }, size);
     return std::shared_ptr<http::Request>{new http::impl::curl::Request{handle}};
 }
 
