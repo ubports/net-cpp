@@ -159,3 +159,118 @@ TEST(HttpClient, put_request_for_existing_resource_succeeds)
     EXPECT_TRUE(reader.parse(response.body, root));
     EXPECT_EQ(payload.str(), root["data"].asString());
 }
+
+namespace com
+{
+namespace mozilla
+{
+namespace services
+{
+namespace location
+{
+const char* host() { return "https://location.services.mozilla.com"; }
+namespace resources
+{
+namespace v1
+{
+const char* search() { return "/v1/search"; }
+const char* submit() { return "/v1/submit"; }
+}
+}
+}
+}
+}
+}
+
+// See https://mozilla-ichnaea.readthedocs.org/en/latest/api/search.html
+// for API and endpoint documentation.
+TEST(HttpClient, search_for_location_on_mozillas_location_service_succeeds)
+{
+    json::FastWriter writer;
+    json::Value search;
+    json::Value cell;
+    cell["radio"] = "umts";
+    cell["mcc"] = 123;
+    cell["mnc"] = 123;
+    cell["lac"] = 12345;
+    cell["cid"] = 12345;
+    cell["signal"] = -61;
+    cell["asu"] = 26;
+    json::Value wifi1, wifi2;
+    wifi1["key"] = "01:23:45:67:89:ab";
+    wifi1["channel"] = 11;
+    wifi1["frequency"] = 2412;
+    wifi1["signal"] = -50;
+    wifi2["key"] = "01:23:45:67:cd:ef";
+
+    search["radio"] = json::Value("gsm");
+    search["cell"].append(cell);
+    search["wifi"].append(wifi1);
+    search["wifi"].append(wifi2);
+
+    auto client = http::make_client();
+    auto url =
+            std::string(com::mozilla::services::location::host()) +
+            com::mozilla::services::location::resources::v1::search();
+    auto request = client->post(url,
+                                writer.write(search),
+                                http::ContentType::json);
+
+    auto response = request->execute();
+
+    json::Reader reader;
+    json::Value result;
+
+    EXPECT_EQ(core::net::http::Status::ok, response.status);
+    EXPECT_TRUE(reader.parse(response.body, result));
+    EXPECT_EQ("ok", result["status"].asString());
+    EXPECT_DOUBLE_EQ(-22.7539192, result["lat"].asDouble());
+    EXPECT_DOUBLE_EQ(-43.4371081, result["lon"].asDouble());
+}
+
+// See https://mozilla-ichnaea.readthedocs.org/en/latest/api/submit.html
+// for API and endpoint documentation.
+TEST(HttpClient, submit_of_location_on_mozillas_location_service_succeeds)
+{
+    json::Value submit;
+    json::Value cell;
+    cell["radio"] = "umts";
+    cell["mcc"] = 123;
+    cell["mnc"] = 123;
+    cell["lac"] = 12345;
+    cell["cid"] = 12345;
+    cell["signal"] = -60;
+    json::Value wifi1, wifi2;
+    wifi1["key"] = "01:23:45:67:89:ab";
+    wifi1["channel"] = 11;
+    wifi1["frequency"] = 2412;
+    wifi1["signal"] = -50;
+    wifi2["key"] = "01:23:45:67:cd:ef";
+
+    json::Value item;
+    item["lat"] = -22.7539192;
+    item["lon"] = -43.4371081;
+    item["time"] = "2012-03-15T11:12:13.456Z";
+    item["accuracy"] = 10;
+    item["altitude"] = 100;
+    item["altitude_accuracy"] = 1;
+    item["radio"] = "gsm";
+    item["cell"].append(cell);
+    item["wifi"].append(wifi1);
+    item["wifi"].append(wifi2);
+
+    submit["items"].append(item);
+
+    json::FastWriter writer;
+    auto client = http::make_client();
+    auto url =
+            std::string(com::mozilla::services::location::host()) +
+            com::mozilla::services::location::resources::v1::submit();
+    auto request = client->post(url,
+                                writer.write(submit),
+                                http::ContentType::json);
+    auto response = request->execute();
+
+    EXPECT_EQ(http::Status::no_content,
+              response.status);
+}

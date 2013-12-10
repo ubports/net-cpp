@@ -151,6 +151,10 @@ private:
                 }
             }
 
+            // We are reusing handles, thus we need to make sure to reset options.
+            if (result)
+                curl_easy_reset(result.get());
+
             return result;
         }
 
@@ -207,7 +211,7 @@ public:
         static const std::size_t did_not_consume_any_data = 0;
         auto thiz = static_cast<Private*>(cookie);
 
-        if (thiz)
+        if (thiz && thiz->on_read_data_cb)
         {
             return thiz->on_read_data_cb(data, size, nmemb);
         }
