@@ -41,6 +41,9 @@ public:
         };
     };
 
+    typedef std::function<void(const Response&)> ResponseHandler;
+    typedef std::function<void()> ErrorHandler;
+
     Request(const Request&) = delete;
     virtual ~Request() = default;
 
@@ -48,6 +51,7 @@ public:
     bool operator==(const Request&) const = delete;
 
     virtual Response execute() = 0;
+    virtual void async_execute(const ResponseHandler&, const ErrorHandler&) = 0;
 protected:
     Request() = default;
 };

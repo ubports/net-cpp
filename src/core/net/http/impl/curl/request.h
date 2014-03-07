@@ -46,18 +46,16 @@ public:
 
     Response execute()
     {
-        Response result;
-        std::stringstream body;
 
         handle.on_write_data(
-                    [&body](char* data, std::size_t size, std::size_t nmemb)
+                    [this](char* data, std::size_t size, std::size_t nmemb)
                     {
                         body.write(data, size * nmemb);
                         return size * nmemb;
                     });
 
         handle.on_write_header(
-                    [&result](void* data, std::size_t size, std::size_t nmemb)
+                    [this](void* data, std::size_t size, std::size_t nmemb)
                     {
                         const char* begin = static_cast<const char*>(data);
                         const char* end = begin + size*nmemb;
@@ -82,11 +80,62 @@ public:
 
         result.status = handle.status();
         result.body = body.str();
-        return std::move(result);
+        return result;
+    }
+
+    void async_execute(const Request::ResponseHandler& rh, const Request::ErrorHandler& eh)
+    {
+        response_handler = rh;
+        error_handler = eh;
+
+        handle.on_finished([this](::curl::Code code)
+        {
+            if (code == ::curl::Code::ok)
+            {
+                result.status = handle.status();
+                result.body = body.str();
+
+                response_handler(result);
+            } else
+            {
+                error_handler();
+            }
+        });
+
+        handle.on_write_data(
+                    [this](char* data, std::size_t size, std::size_t nmemb)
+                    {
+                        body.write(data, size * nmemb);
+                        return size * nmemb;
+                    });
+
+        handle.on_write_header(
+                    [this](void* data, std::size_t size, std::size_t nmemb)
+                    {
+                        const char* begin = static_cast<const char*>(data);
+                        const char* end = begin + size*nmemb;
+                        auto position = std::find(begin, end, ':');
+
+                        if (position != begin && position < end)
+                        {
+                            result.headers.emplace(
+                                        Header::Key{begin, position},
+                                        Header::Value{position+1, end});
+                        }
+
+                        return size * nmemb;
+                    });
+
+        ::curl::multi::instance().add(handle);
     }
 
 private:
     ::curl::easy::Handle handle;
+    Response result;
+    std::stringstream body;
+    Request::ResponseHandler response_handler;
+    Request::ErrorHandler error_handler;
+
 };
 }
 }

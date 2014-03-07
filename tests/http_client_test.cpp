@@ -8,6 +8,8 @@
 
 #include <json/json.h>
 
+#include <future>
+
 namespace http = core::net::http;
 namespace json = Json;
 namespace net = core::net;
@@ -112,6 +114,48 @@ TEST(HttpClient, get_request_for_existing_resource_succeeds)
     EXPECT_EQ(url, root["url"].asString());
 }
 
+TEST(HttpClient, async_get_request_for_existing_resource_succeeds)
+{
+    // We obtain a default client instance, dispatching to the default implementation.
+    auto client = http::make_client();
+
+    // Url pointing to the resource we would like to access via http.
+    auto url = std::string(httpbin::host()) + httpbin::resources::get();
+
+    // The client mostly acts as a factory for http requests.
+    auto request = client->get(url);
+
+    // All endpoint data on httpbin.org is JSON encoded.
+    json::Value root;
+    json::Reader reader;
+
+    std::promise<core::net::http::Response> promise;
+    auto future = promise.get_future();
+
+    // We finally execute the query asynchronously.
+    request->async_execute(
+                [&promise](const core::net::http::Response& response)
+                {
+                    promise.set_value(response);
+                },
+                [&promise]()
+                {
+                    promise.set_exception(
+                                std::make_exception_ptr(
+                                    std::runtime_error("Error accessing remote resource")));
+                });
+
+    // And wait here for the response to arrive.
+    auto response = future.get();
+
+    // We expect the query to complete successfully
+    EXPECT_EQ(core::net::http::Status::ok, response.status);
+    // Parsing the body of the response as JSON should succeed.
+    EXPECT_TRUE(reader.parse(response.body, root));
+    // The url field of the payload should equal the original url we requested.
+    EXPECT_EQ(url, root["url"].asString());
+}
+
 TEST(HttpClient, post_request_for_existing_resource_succeeds)
 {
     // We obtain a default client instance, dispatching to the default implementation.
@@ -168,7 +212,9 @@ namespace services
 {
 namespace location
 {
-const char* host() { return "https://location.services.mozilla.com"; }
+//const char* host() { return "https://location.services.mozilla.com"; }
+const char* host() { return "http://54.80.82.190:7001/"; }
+
 namespace resources
 {
 namespace v1

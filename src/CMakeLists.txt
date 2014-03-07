@@ -14,9 +14,10 @@
 #
 # Authored by: Thomas Voss <thomas.voss@canonical.com>
 
+find_package(Boost COMPONENTS system REQUIRED)
 find_package(CURL REQUIRED)
 
-include_directories(${CURL_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS})
 
 add_library(
   net-cpp SHARED
@@ -29,6 +30,7 @@ add_library(
 target_link_libraries(
   net-cpp
 
+  ${Boost_LIBRARIES}
   ${CURL_LIBRARIES}
 )
 

@@ -22,6 +22,9 @@
 #include <core/net/http/method.h>
 #include <core/net/http/status.h>
 
+#include <boost/asio.hpp>
+#include <boost/asio/posix/stream_descriptor.hpp>
+
 #include <curl/curl.h>
 
 #include <atomic>
@@ -30,6 +33,13 @@
 #include <iostream>
 #include <mutex>
 #include <stack>
+#include <thread>
+
+namespace
+{
+boost::asio::io_service dispatcher;
+boost::asio::io_service::work work{dispatcher};
+}
 
 namespace curl
 {
@@ -75,6 +85,8 @@ struct Shared
     };
     std::shared_ptr<Private> d;
 };
+
+
 
 enum class Code
 {
@@ -176,6 +188,7 @@ private:
     };
 
 public:
+    typedef std::function<void(curl::Code)> OnFinished;
     typedef std::function<std::size_t(void*, std::size_t, std::size_t)> OnReadData;
     typedef std::function<std::size_t(char*, std::size_t, std::size_t)> OnWriteData;
     typedef std::function<std::size_t(void*, std::size_t, std::size_t)> OnWriteHeader;
@@ -240,6 +253,12 @@ public:
                     option::user_agent,
                     user_agent);
 
+        return *this;
+    }
+
+    Handle& on_finished(const OnFinished& on_finished)
+    {
+        d->on_finished_cb = on_finished;
         return *this;
     }
 
@@ -345,9 +364,20 @@ public:
         return d->handle.get();
     }
 
+    CURL* handle() const
+    {
+        return d->handle.get();
+    }
+
     Code perform()
     {
         return static_cast<Code>(curl_easy_perform(d->handle.get()));
+    }
+
+    void notify_finished(curl::Code code)
+    {
+        if (d->on_finished_cb)
+            d->on_finished_cb(code);
     }
 
 private:
@@ -364,10 +394,330 @@ private:
 
         std::shared_ptr<CURL> handle;
 
+        OnFinished on_finished_cb;
         OnWriteData on_write_data_cb;
         OnWriteHeader on_write_header_cb;
         OnReadData on_read_data_cb;
     };
+    std::shared_ptr<Private> d;
+};
+}
+namespace multi
+{
+enum class Code
+{
+    call_multi_perform = CURLM_CALL_MULTI_PERFORM,
+    ok = CURLM_OK,
+    bad_handle = CURLM_BAD_HANDLE,
+    easy_handle = CURLM_BAD_EASY_HANDLE,
+    out_of_memory = CURLM_OUT_OF_MEMORY,
+    internal_error = CURLM_INTERNAL_ERROR,
+    bad_socket = CURLM_BAD_SOCKET,
+    unknown_option = CURLM_UNKNOWN_OPTION,
+    added_already = CURLM_ADDED_ALREADY
+};
+
+inline std::ostream& operator<<(std::ostream& out, Code code)
+{
+    switch (code)
+    {
+    case Code::call_multi_perform: out << "curl::multi::Code::call_multi_perform"; break;
+    case Code::ok: out << "curl::multi::Code::ok"; break;
+    case Code::bad_handle: out << "curl::multi::Code::bad_handle"; break;
+    case Code::easy_handle: out << "curl::multi::Code::easy_handle"; break;
+    case Code::out_of_memory: out << "curl::multi::Code::out_of_memory"; break;
+    case Code::internal_error: out << "curl::multi::Code::internal_error"; break;
+    case Code::bad_socket: out << "curl::multi::Code::bad_socket"; break;
+    case Code::unknown_option: out << "curl::multi::Code::unknown_option"; break;
+    case Code::added_already: out << "curl::multi::Code::added_already"; break;
+    }
+
+    return out;
+}
+
+namespace option
+{
+    const CURLMoption socket_function = CURLMOPT_SOCKETFUNCTION;
+    const CURLMoption socket_data = CURLMOPT_SOCKETDATA;
+    const CURLMoption timer_function = CURLMOPT_TIMERFUNCTION;
+    const CURLMoption timer_data = CURLMOPT_TIMERDATA;
+}
+struct Handle
+{
+    struct SynchronizedHandleStore
+    {
+        std::mutex guard;
+        std::map<CURL*, easy::Handle> handles;
+
+        void add(easy::Handle easy)
+        {
+            std::lock_guard<std::mutex> lg(guard);
+            handles.insert(std::make_pair(easy.handle(), easy));
+            curl_multi_add_handle(easy.handle());
+        }
+
+        void remove(easy::Handle easy)
+        {
+            std::lock_guard<std::mutex> lg(guard);
+            handles.erase(easy.handle());
+            curl_multi_remove_handle(d->handle, easy.handle());
+        }
+
+        easy::Handle lookup_native(CURL* native)
+        {
+            std::lock_guard<std::mutex> lg(guard);
+            auto it = handles.find(native);
+
+            if (it == handles.end())
+                throw std::runtime_error("SynchronizedHandleStore::lookup_native: No such handle.");
+
+            return it->second;
+        }
+    };
+
+    static Handle& instance()
+    {
+        static std::thread worker{[]() { dispatcher.run(); }};
+        static Handle inst;
+        return inst;
+    }
+
+    template<typename T>
+    struct Holder
+    {
+        std::shared_ptr<T> value;
+    };
+
+    Handle() : d(new Private())
+    {
+        auto holder = new Holder<Private>{d};
+        curl_multi_setopt(d->handle, option::socket_function, Private::curl_socket_callback);
+        curl_multi_setopt(d->handle, option::socket_data, holder);
+        curl_multi_setopt(d->handle, option::timer_function, Private::curl_timer_callback);
+        curl_multi_setopt(d->handle, option::timer_data, holder);
+    }
+
+    void add(curl::easy::Handle easy)
+    {
+        curl_multi_add_handle(d->handle, easy.handle());
+        handle_store().add(easy);
+    }
+
+    void remove(curl::easy::Handle easy)
+    {
+        curl_multi_remove_handle(d->handle, easy.handle());
+        handle_store().remove(easy);
+    }
+
+    CURLM* handle() const
+    {
+        return d->handle;
+    }
+
+    struct Private
+    {
+
+        static void process_multi_info(CURLM* handle)
+        {
+            CURLMsg* msg{nullptr};
+
+            int msg_count;
+            while ((msg = curl_multi_info_read(handle, &msg_count)))
+            {
+                if (msg->msg == CURLMSG_DONE)
+                {
+                    auto easy = msg->easy_handle;
+
+                    auto it = known_handles().find(easy);
+                    if (it != known_handles().end())
+                    {
+                        it->second.notify_finished(static_cast<curl::Code>(msg->data.result));
+                        known_handles().erase(it);
+                    }
+                }
+            }
+        }
+
+        struct Timeout
+        {
+            Timeout() : timer(dispatcher)
+            {
+            }
+
+            ~Timeout()
+            {
+                timer.cancel();
+            }
+
+            void async_wait_for(const std::shared_ptr<Private>& context, const std::chrono::milliseconds& ms)
+            {
+                timer.expires_from_now(boost::posix_time::milliseconds{ms.count()});
+                timer.async_wait([context](const boost::system::error_code& ec)
+                {
+
+                    if (ec)
+                        return;
+
+                    int still_running;
+                    curl_multi_socket_action(context->handle, CURL_SOCKET_TIMEOUT, 0, &still_running);
+
+                    Private::process_multi_info(context->handle);
+                });
+            }
+
+            boost::asio::deadline_timer timer;
+        };
+
+        static int curl_timer_callback(
+                CURLM*,
+                long timeout_ms,
+                void* cookie)
+        {
+            if (timeout_ms < 0)
+                return -1;
+
+            auto holder = static_cast<Holder<Private>*>(cookie);
+
+            if (!holder)
+                return 0;
+
+            auto thiz = holder->value;
+
+            thiz->timeout.async_wait_for(thiz, std::chrono::milliseconds{timeout_ms});
+
+            return 0;
+        }
+
+        struct Socket
+        {
+            ~Socket()
+            {
+                sd.cancel();
+            }
+
+            void async_wait_for_readable(const std::shared_ptr<Private>& context)
+            {
+                sd.async_read_some(boost::asio::null_buffers{}, [this, context](const boost::system::error_code& ec, std::size_t)
+                {
+                    int bitmask{0};
+
+                    if (ec)
+                        bitmask = CURL_CSELECT_ERR;
+                    else
+                        bitmask = CURL_CSELECT_IN;
+
+                    int still_running;
+                    curl_multi_socket_action(
+                                context->handle,
+                                sd.native_handle(),
+                                bitmask,
+                                &still_running);
+
+                    Private::process_multi_info(context->handle);
+
+                    // Restart
+                    async_wait_for_readable(context);
+                });
+            }
+
+            void async_wait_for_writeable(const std::shared_ptr<Private>& context)
+            {
+                boost::asio::async_write(sd, boost::asio::null_buffers{}, [this, context](const boost::system::error_code& ec, std::size_t)
+                {
+                    int bitmask{0};
+
+                    if (ec)
+                        bitmask = CURL_CSELECT_ERR;
+                    else
+                        bitmask = CURL_CSELECT_OUT;
+
+                    int still_running;
+                    curl_multi_socket_action(
+                                context->handle,
+                                sd.native_handle(),
+                                bitmask,
+                                &still_running);
+
+                    Private::process_multi_info(context->handle);
+
+                    // Restart
+                    async_wait_for_writeable(context);
+                });
+            }
+
+            boost::asio::posix::stream_descriptor sd;
+        };
+
+        static int curl_socket_callback(
+                CURL*,
+                curl_socket_t s,
+                int action,
+                void* cookie,
+                void* socket_cookie)
+        {
+            static const int doc_tells_we_must_return_0{0};
+
+            auto holder = static_cast<Holder<Private>*>(cookie);
+
+            if (!holder)
+                return doc_tells_we_must_return_0;
+
+            auto thiz = holder->value;
+            auto socket = static_cast<Socket*>(socket_cookie);
+
+            if (!socket)
+            {
+                socket = new Socket
+                {
+                    std::move(boost::asio::posix::stream_descriptor
+                    {
+                        dispatcher,
+                        s
+                    })
+                };
+
+                curl_multi_assign(thiz->handle, s, socket);
+            }
+            switch (action)
+            {
+            case CURL_POLL_NONE:
+            {
+                break;
+            }
+            case CURL_POLL_IN:
+                socket->async_wait_for_readable(thiz);
+                break;
+            case CURL_POLL_OUT:
+                socket->async_wait_for_writeable(thiz);
+                break;
+            case CURL_POLL_INOUT:
+                socket->async_wait_for_readable(thiz);
+                socket->async_wait_for_writeable(thiz);
+                break;
+            case CURL_POLL_REMOVE:
+            {
+                delete socket;
+                break;
+            }
+            }
+
+            return doc_tells_we_must_return_0;
+        }
+
+        Private()
+            : handle(curl_multi_init())
+        {
+        }
+
+        ~Private()
+        {
+            curl_multi_cleanup(handle);
+        }
+
+        CURLM* handle;
+        Timeout timeout;
+    };
+
     std::shared_ptr<Private> d;
 };
 }
