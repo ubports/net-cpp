@@ -25,53 +25,90 @@
 namespace net = core::net;
 namespace http = core::net::http;
 
-
-
 http::impl::curl::Client::Client()
 {
 }
 
-std::shared_ptr<http::Request> http::impl::curl::Client::head(const std::string& uri)
+void http::impl::curl::Client::run()
+{
+    multi.run();
+}
+
+void http::impl::curl::Client::stop()
+{
+    multi.stop();
+}
+
+std::shared_ptr<http::Request> http::impl::curl::Client::head(const http::Request::Configuration& configuration)
 {
     ::curl::easy::Handle handle;
     handle.method(http::Method::head)
-            .url(uri.c_str());
-    return std::shared_ptr<http::Request>{new http::impl::curl::Request{handle}};
+            .url(configuration.uri.c_str());
+
+    if (configuration.authentication_handler.for_http)
+    {
+        auto credentials = configuration.authentication_handler.for_http(configuration.uri);
+        handle.http_credentials(credentials.username, credentials.password);
+    }
+
+    return std::shared_ptr<http::Request>{new http::impl::curl::Request{multi, handle}};
 }
 
-std::shared_ptr<http::Request> http::impl::curl::Client::get(const std::string& uri)
+std::shared_ptr<http::Request> http::impl::curl::Client::get(const http::Request::Configuration& configuration)
 {
     ::curl::easy::Handle handle;
     handle.method(http::Method::get)
-            .url(uri.c_str());
-    return std::shared_ptr<http::Request>{new http::impl::curl::Request{handle}};
+            .url(configuration.uri.c_str());
+
+    if (configuration.authentication_handler.for_http)
+    {
+        auto credentials = configuration.authentication_handler.for_http(configuration.uri);
+        handle.http_credentials(credentials.username, credentials.password);
+    }
+
+    return std::shared_ptr<http::Request>{new http::impl::curl::Request{multi, handle}};
 }
 
-std::shared_ptr<http::Request> http::impl::curl::Client::post(const std::string& uri,
-                              const std::string& payload,
-                              const http::ContentType& ct)
+std::shared_ptr<http::Request> http::impl::curl::Client::post(
+        const Request::Configuration& configuration,
+        const std::string& payload,
+        const http::ContentType& ct)
 {
     ::curl::easy::Handle handle;
     handle.method(http::Method::post)
-            .url(uri.c_str())
+            .url(configuration.uri.c_str())
             .post_data(payload.c_str(), ct);
-    return std::shared_ptr<http::Request>{new http::impl::curl::Request{handle}};
+
+    if (configuration.authentication_handler.for_http)
+    {
+        auto credentials = configuration.authentication_handler.for_http(configuration.uri);
+        handle.http_credentials(credentials.username, credentials.password);
+    }
+
+    return std::shared_ptr<http::Request>{new http::impl::curl::Request{multi, handle}};
 }
 
 std::shared_ptr<http::Request> http::impl::curl::Client::put(
-        const std::string& uri,
+        const Request::Configuration& configuration,
         std::istream& payload,
         std::size_t size)
 {
     ::curl::easy::Handle handle;
     handle.method(http::Method::put)
-            .url(uri.c_str())
+            .url(configuration.uri.c_str())
             .on_read_data([&payload, size](void* dest, std::size_t /*in_size*/, std::size_t /*nmemb*/)
             {
                 auto result = payload.readsome(static_cast<char*>(dest), size);
                 return result;
             }, size);
-    return std::shared_ptr<http::Request>{new http::impl::curl::Request{handle}};
+
+    if (configuration.authentication_handler.for_http)
+    {
+        auto credentials = configuration.authentication_handler.for_http(configuration.uri);
+        handle.http_credentials(credentials.username, credentials.password);
+    }
+
+    return std::shared_ptr<http::Request>{new http::impl::curl::Request{multi, handle}};
 }
 
 std::shared_ptr<http::Client> http::make_client()

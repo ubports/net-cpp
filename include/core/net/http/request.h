@@ -20,6 +20,8 @@
 
 #include <core/net/visibility.h>
 
+#include <core/net/uri.h>
+
 #include <memory>
 
 namespace core
@@ -32,17 +34,81 @@ class Response;
 class CORE_NET_DLL_PUBLIC Request
 {
 public:
+    enum class State
+    {
+        idle,
+        active
+    };
+
     struct Errors
     {
         Errors() = delete;
 
-        struct DidNotReceiveResponse
+        struct DidNotReceiveResponse : public std::runtime_error
         {
+            inline DidNotReceiveResponse(const std::string& what) : std::runtime_error(what.c_str())
+            {
+            }
+        };
+
+        struct AlreadyActive : public std::runtime_error
+        {
+            inline AlreadyActive(const std::string& location) : std::runtime_error(location.c_str())
+            {
+            }
         };
     };
 
-    typedef std::function<void(const Response&)> ResponseHandler;
+    struct Credentials
+    {
+        std::string username;
+        std::string password;
+    };
+
+    typedef std::function<Credentials(const std::string&)> AuthenicationHandler;
+
+    struct Configuration
+    {
+        inline static Configuration from_uri_as_string(const std::string& uri)
+        {
+            Configuration result;
+            result.uri = uri;
+
+            return result;
+        }
+
+        std::string uri;
+        struct
+        {
+            AuthenicationHandler for_http;
+            AuthenicationHandler for_proxy;
+        } authentication_handler;
+    };
+
+    struct Progress
+    {
+        enum class Next
+        {
+            continue_operation,
+            abort_operation
+        };
+
+        struct
+        {
+            double total{-1.};
+            double current{-1.};
+        } download{};
+
+        struct
+        {
+            double total{-1.};
+            double current{-1.};
+        } upload{};
+    };
+
     typedef std::function<void()> ErrorHandler;
+    typedef std::function<Progress::Next(const Progress&)> ProgressHandler;
+    typedef std::function<void(const Response&)> ResponseHandler;
 
     Request(const Request&) = delete;
     virtual ~Request() = default;
@@ -50,8 +116,11 @@ public:
     Request& operator=(const Request&) = delete;
     bool operator==(const Request&) const = delete;
 
-    virtual Response execute() = 0;
-    virtual void async_execute(const ResponseHandler&, const ErrorHandler&) = 0;
+    virtual State state() = 0;
+
+    virtual Response execute(const ProgressHandler&) = 0;
+    virtual void async_execute(const ProgressHandler&, const ResponseHandler&, const ErrorHandler&) = 0;
+
 protected:
     Request() = default;
 };

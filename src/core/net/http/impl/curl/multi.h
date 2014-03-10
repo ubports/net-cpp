@@ -15,11 +15,36 @@
  *
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
-#ifndef CORE_NET_HTTP_IMPL_CURL_CURL_H_
-#define CORE_NET_HTTP_IMPL_CURL_CURL_H_
+#ifndef CORE_NET_HTTP_IMPL_CURL_MULTI_H_
+#define CORE_NET_HTTP_IMPL_CURL_MULTI_H_
 
 #include "easy.h"
-#include "multi.h"
-#include "shared.h"
 
-#endif // CORE_NET_HTTP_IMPL_CURL_CURL_H_
+namespace curl
+{
+namespace multi
+{
+typedef CURLM* Native;
+
+class Handle
+{
+public:
+    Handle();
+
+    void run();
+    void stop();
+
+    void add(curl::easy::Handle easy);
+    void remove(curl::easy::Handle easy);
+
+    curl::easy::Handle easy_handle_from_native(CURL* native);
+
+    Native native() const;
+
+private:
+    struct Private;
+    std::shared_ptr<Private> d;
+};
+}
+}
+#endif // CORE_NET_HTTP_IMPL_CURL_MULTI_H_

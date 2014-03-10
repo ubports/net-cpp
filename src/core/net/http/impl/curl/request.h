@@ -24,6 +24,7 @@
 #include "curl.h"
 
 #include <algorithm>
+#include <atomic>
 #include <iostream>
 #include <sstream>
 
@@ -37,25 +38,77 @@ namespace impl
 {
 namespace curl
 {
+// Make sure that we switch the state back to idle whenever an instance
+// of StateGuard goes out of scope.
+struct StateGuard
+{
+    StateGuard(std::atomic<core::net::http::Request::State>& state) : state(state)
+    {
+        state.store(core::net::http::Request::State::active);
+    }
+
+    ~StateGuard()
+    {
+        state.store(core::net::http::Request::State::idle);
+    }
+
+    std::atomic<core::net::http::Request::State>& state;
+};
+
 class Request : public core::net::http::Request
 {
 public:
-    Request(const ::curl::easy::Handle& handle) : handle(handle)
+    Request(::curl::multi::Handle& multi,
+            const ::curl::easy::Handle& easy)
+        : atomic_state(core::net::http::Request::State::idle),
+          multi(multi),
+          easy(easy)
     {
     }
 
-    Response execute()
+    State state()
     {
+        return atomic_state.load();
+    }
 
-        handle.on_write_data(
-                    [this](char* data, std::size_t size, std::size_t nmemb)
+    Response execute(const Request::ProgressHandler& ph)
+    {
+        if (atomic_state.load() == core::net::http::Request::State::active)
+            throw core::net::http::Request::Errors::AlreadyActive{__PRETTY_FUNCTION__};
+
+        StateGuard sg{atomic_state};
+        Context context;
+
+        if (ph)
+        {
+            easy.on_progress([&](void*, double dltotal, double dlnow, double ultotal, double ulnow)
+            {
+                Request::Progress progress;
+                progress.download.total = dltotal;
+                progress.download.current = dlnow;
+                progress.upload.total = ultotal;
+                progress.upload.current = ulnow;
+
+                int result{-1};
+
+                switch(ph(progress))
+                {
+                case Request::Progress::Next::abort_operation: result = 1; break;
+                case Request::Progress::Next::continue_operation: result = 0; break;
+                }
+
+                return result;
+            });
+        }
+
+        easy.on_write_data(
+                    [&](char* data, std::size_t size, std::size_t nmemb)
                     {
-                        body.write(data, size * nmemb);
+                        context.body.write(data, size * nmemb);
                         return size * nmemb;
                     });
-
-        handle.on_write_header(
-                    [this](void* data, std::size_t size, std::size_t nmemb)
+        easy.on_write_header(
+                    [&](void* data, std::size_t size, std::size_t nmemb)
                     {
                         const char* begin = static_cast<const char*>(data);
                         const char* end = begin + size*nmemb;
@@ -63,7 +116,7 @@ public:
 
                         if (position != begin && position < end)
                         {
-                            result.headers.emplace(
+                            context.result.headers.emplace(
                                         Header::Key{begin, position},
                                         Header::Value{position+1, end});
                         }
@@ -71,46 +124,76 @@ public:
                         return size * nmemb;
                     });
 
-        auto rc = handle.perform();
+        auto rc = easy.perform();
 
         if (rc != ::curl::Code::ok)
         {
-            throw Errors::DidNotReceiveResponse{};
+            std::stringstream ss; ss << rc;
+            throw Errors::DidNotReceiveResponse{ss.str()};
         }
 
-        result.status = handle.status();
-        result.body = body.str();
-        return result;
+        context.result.status = easy.status();
+        context.result.body = context.body.str();
+
+        return context.result;
     }
 
-    void async_execute(const Request::ResponseHandler& rh, const Request::ErrorHandler& eh)
+    void async_execute(
+            const Request::ProgressHandler& ph,
+            const Request::ResponseHandler& rh,
+            const Request::ErrorHandler& eh)
     {
-        response_handler = rh;
-        error_handler = eh;
+        if (atomic_state.load() == core::net::http::Request::State::active)
+            throw core::net::http::Request::Errors::AlreadyActive{__PRETTY_FUNCTION__};
 
-        handle.on_finished([this](::curl::Code code)
+        auto sg = std::make_shared<StateGuard>(atomic_state);
+        auto context = std::make_shared<Context>();
+
+        easy.on_finished([=](::curl::Code code)
         {
             if (code == ::curl::Code::ok)
             {
-                result.status = handle.status();
-                result.body = body.str();
+                context->result.status = easy.status();
+                context->result.body = context->body.str();
 
-                response_handler(result);
+                rh(context->result);
             } else
             {
-                error_handler();
+                eh();
             }
         });
 
-        handle.on_write_data(
-                    [this](char* data, std::size_t size, std::size_t nmemb)
+        if (ph)
+        {
+            easy.on_progress([=](void*, double dltotal, double dlnow, double ultotal, double ulnow)
+            {
+                Request::Progress progress;
+                progress.download.total = dltotal;
+                progress.download.current = dlnow;
+                progress.upload.total = ultotal;
+                progress.upload.current = ulnow;
+
+                int result{-1};
+
+                switch(ph(progress))
+                {
+                case Request::Progress::Next::abort_operation: result = 1; break;
+                case Request::Progress::Next::continue_operation: result = 0; break;
+                }
+
+                return result;
+            });
+        }
+
+        easy.on_write_data(
+                    [=](char* data, std::size_t size, std::size_t nmemb)
                     {
-                        body.write(data, size * nmemb);
+                        context->body.write(data, size * nmemb);
                         return size * nmemb;
                     });
 
-        handle.on_write_header(
-                    [this](void* data, std::size_t size, std::size_t nmemb)
+        easy.on_write_header(
+                    [=](void* data, std::size_t size, std::size_t nmemb)
                     {
                         const char* begin = static_cast<const char*>(data);
                         const char* end = begin + size*nmemb;
@@ -118,7 +201,7 @@ public:
 
                         if (position != begin && position < end)
                         {
-                            result.headers.emplace(
+                            context->result.headers.emplace(
                                         Header::Key{begin, position},
                                         Header::Value{position+1, end});
                         }
@@ -126,16 +209,19 @@ public:
                         return size * nmemb;
                     });
 
-        ::curl::multi::instance().add(handle);
+        multi.add(easy);
     }
 
 private:
-    ::curl::easy::Handle handle;
-    Response result;
-    std::stringstream body;
-    Request::ResponseHandler response_handler;
-    Request::ErrorHandler error_handler;
+    std::atomic<core::net::http::Request::State> atomic_state;
+    ::curl::multi::Handle& multi;
+    ::curl::easy::Handle easy;
 
+    struct Context
+    {
+        Response result;
+        std::stringstream body;
+    };
 };
 }
 }

@@ -20,6 +20,8 @@
 
 #include <core/net/http/client.h>
 
+#include "curl.h"
+
 namespace core
 {
 namespace net
@@ -36,13 +38,20 @@ public:
     Client();
 
     // From core::net::http::Client
-    std::shared_ptr<Request> get(const std::string& uri);
+    void run();
 
-    std::shared_ptr<Request> head(const std::string& uri);
+    void stop();
 
-    std::shared_ptr<Request> post(const std::string& uri, const std::string&, const ContentType&);
+    std::shared_ptr<Request> get(const Request::Configuration& configuration);
 
-    std::shared_ptr<Request> put(const std::string& uri, std::istream& payload, std::size_t size);
+    std::shared_ptr<Request> head(const Request::Configuration& configuration);
+
+    std::shared_ptr<Request> post(const Request::Configuration& configuration, const std::string&, const ContentType&);
+
+    std::shared_ptr<Request> put(const Request::Configuration& configuration, std::istream& payload, std::size_t size);
+
+private:
+    ::curl::multi::Handle multi;
 };
 }
 }

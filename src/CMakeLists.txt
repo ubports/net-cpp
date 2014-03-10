@@ -24,7 +24,11 @@ add_library(
 
   core/net/uri.cpp
   core/net/http/status.cpp
+
   core/net/http/impl/curl/client.cpp
+  core/net/http/impl/curl/easy.cpp
+  core/net/http/impl/curl/multi.cpp
+  core/net/http/impl/curl/shared.cpp
 )
 
 target_link_libraries(

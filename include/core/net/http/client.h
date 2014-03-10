@@ -21,6 +21,7 @@
 #include <core/net/visibility.h>
 
 #include <core/net/http/method.h>
+#include <core/net/http/request.h>
 
 #include <iosfwd>
 #include <memory>
@@ -33,6 +34,7 @@ namespace http
 {
 class ContentType;
 class Request;
+
 class CORE_NET_DLL_PUBLIC Client
 {
 public:
@@ -56,6 +58,12 @@ public:
     Client& operator=(const Client&) = delete;
     bool operator==(const Client&) const = delete;
 
+    /** @brief Execute the client and any impl-specific thread-pool or runtime. */
+    virtual void run() = 0;
+
+    /** @brief Stop the client and any impl-specific thread-pool or runtime. */
+    virtual void stop() = 0;
+
     /**
      * @brief request creates a Request for the provided URI and the given HTTP method.
      * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
@@ -68,36 +76,36 @@ public:
     /**
      * @brief get is a convenience method for issueing a GET request for the given URI.
      * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
-     * @param uri The URI to issue a GET request for.
+     * @param configuration The configuration to issue a get request for.
      * @return An executable instance of class Request.
      */
-    virtual std::shared_ptr<Request> get(const std::string& uri) = 0;
+    virtual std::shared_ptr<Request> get(const Request::Configuration& configuration) = 0;
 
     /**
      * @brief head is a convenience method for issueing a HEAD request for the given URI.
      * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
-     * @param uri The URI to issue a HEAD request for.
+     * @param configuration The configuration to issue a get request for.
      * @return An executable instance of class Request.
      */
-    virtual std::shared_ptr<Request> head(const std::string& uri) = 0;
+    virtual std::shared_ptr<Request> head(const Request::Configuration& configuration) = 0;
 
     /**
      * @brief put is a convenience method for issuing a PUT request for the given URI.
      * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
-     * @param uri The URI to issue a PUT request for.
+     * @param configuration The configuration to issue a get request for.
      * @param payload The data to be transmitted as part of the PUT request.
      * @return An executable instance of class Request.
      */
-    virtual std::shared_ptr<Request> put(const std::string& uri, std::istream& payload, std::size_t size) = 0;
+    virtual std::shared_ptr<Request> put(const Request::Configuration& configuration, std::istream& payload, std::size_t size) = 0;
 
     /**
      * @brief post is a convenience method for issuing a POST request for the given URI.
      * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
-     * @param uri The URI to issue a POST request for.
+     * @param configuration The configuration to issue a get request for.
      * @param payload The data to be transmitted as part of the PUT request.
      * @return An executable instance of class Request.
      */
-    virtual std::shared_ptr<Request> post(const std::string& uri, const std::string& payload, const ContentType& type) = 0;
+    virtual std::shared_ptr<Request> post(const Request::Configuration& configuration, const std::string& payload, const ContentType& type) = 0;
 
 protected:
     Client() = default;
