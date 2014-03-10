@@ -27,6 +27,7 @@
 #include <curl/curl.h>
 
 #include <iosfwd>
+#include <system_error>
 
 namespace curl
 {
@@ -89,39 +90,75 @@ enum class Code
 
 std::ostream& operator<<(std::ostream& out, Code code);
 
-namespace info
+enum class Info
 {
-static const CURLINFO response_code = CURLINFO_RESPONSE_CODE;
-}
+    response_code = CURLINFO_RESPONSE_CODE
+};
 
-namespace option
+enum class Option
 {
-static const CURLoption header_function = CURLOPT_HEADERFUNCTION;
-static const CURLoption header_data = CURLOPT_HEADERDATA;
-static const CURLoption progress_function = CURLOPT_PROGRESSFUNCTION;
-static const CURLoption progress_data = CURLOPT_PROGRESSDATA;
-static const CURLoption no_progress = CURLOPT_NOPROGRESS;
-static const CURLoption write_function = CURLOPT_WRITEFUNCTION;
-static const CURLoption write_data = CURLOPT_WRITEDATA;
-static const CURLoption read_function = CURLOPT_READFUNCTION;
-static const CURLoption read_data = CURLOPT_READDATA;
-static const CURLoption url = CURLOPT_URL;
-static const CURLoption user_agent = CURLOPT_USERAGENT;
-static const CURLoption http_get = CURLOPT_HTTPGET;
-static const CURLoption http_post = CURLOPT_POST;
-static const CURLoption http_put = CURLOPT_PUT;
-static const CURLoption copy_postfields = CURLOPT_COPYPOSTFIELDS;
-static const CURLoption post_field_size = CURLOPT_POSTFIELDSIZE;
-static const CURLoption upload = CURLOPT_UPLOAD;
-static const CURLoption in_file_size = CURLOPT_INFILESIZE;
-static const CURLoption sharing = CURLOPT_SHARE;
-static const CURLoption username = CURLOPT_USERNAME;
-static const CURLoption password = CURLOPT_PASSWORD;
-}
+    header_function = CURLOPT_HEADERFUNCTION,
+    header_data = CURLOPT_HEADERDATA,
+    progress_function = CURLOPT_PROGRESSFUNCTION,
+    progress_data = CURLOPT_PROGRESSDATA,
+    no_progress = CURLOPT_NOPROGRESS,
+    write_function = CURLOPT_WRITEFUNCTION,
+    write_data = CURLOPT_WRITEDATA,
+    read_function = CURLOPT_READFUNCTION,
+    read_data = CURLOPT_READDATA,
+    url = CURLOPT_URL,
+    user_agent = CURLOPT_USERAGENT,
+    http_auth = CURLOPT_HTTPAUTH,
+    http_get = CURLOPT_HTTPGET,
+    http_post = CURLOPT_POST,
+    http_put = CURLOPT_PUT,
+    copy_postfields = CURLOPT_COPYPOSTFIELDS,
+    post_field_size = CURLOPT_POSTFIELDSIZE,
+    upload = CURLOPT_UPLOAD,
+    in_file_size = CURLOPT_INFILESIZE,
+    sharing = CURLOPT_SHARE,
+    username = CURLOPT_USERNAME,
+    password = CURLOPT_PASSWORD
+};
+
 namespace easy
 {
-static const long disable = 0;
-static const long enable = 1;
+constexpr static const long disable = 0;
+constexpr static const long enable = 1;
+
+void perform(Native handle);
+
+template<typename T>
+inline Code set(Native handle, Option option, T value)
+{
+    return static_cast<Code>(curl_easy_setopt(handle, static_cast<CURLoption>(option), value));
+}
+
+template<typename T>
+inline Code get(Native handle, Info info, T value)
+{
+    return static_cast<Code>(curl_easy_getinfo(handle, static_cast<CURLINFO>(info), value));
+}
+
+template<Code ref>
+inline void throw_if(Code code)
+{
+    if (code == ref)
+    {
+        std::stringstream ss; ss << code;
+        throw std::system_error(static_cast<int>(code), std::generic_category(), ss.str());
+    }
+}
+
+template<Code ref>
+inline void throw_if_not(Code code)
+{
+    if (code != ref)
+    {
+        std::stringstream ss; ss << code;
+        throw std::system_error(static_cast<int>(code), std::generic_category(), ss.str());
+    }
+}
 
 class Handle
 {
@@ -133,6 +170,18 @@ public:
     typedef std::function<std::size_t(void*, std::size_t, std::size_t)> OnWriteHeader;
 
     Handle();
+
+    template<typename T, typename U>
+    inline void get_option(T option, U value)
+    {
+        throw_if_not<Code::ok>(get(native(), option, value));
+    }
+
+    template<typename T>
+    inline void set_option(Option option, T value)
+    {
+        throw_if_not<Code::ok>(set(native(), option, value));
+    }
 
     Handle& url(const char* url);
     Handle& user_agent(const char* user_agent);
@@ -151,7 +200,7 @@ public:
 
     Native native() const;
 
-    Code perform();
+    void perform();
 
     void notify_finished(curl::Code code);
 
@@ -160,7 +209,6 @@ private:
     static std::size_t read_data_cb(void* data, std::size_t size, std::size_t nmemb, void *cookie);
     static std::size_t write_data_cb(char* data, size_t size, size_t nmemb, void* cookie);
     static std::size_t write_header_cb(void* data, size_t size, size_t nmemb, void* cookie);
-
 
     struct Private;
     std::shared_ptr<Private> d;

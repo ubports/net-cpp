@@ -1,3 +1,4 @@
+#include <core/net/error.h>
 #include <core/net/uri.h>
 #include <core/net/http/client.h>
 #include <core/net/http/content_type.h>
@@ -232,11 +233,9 @@ TEST(HttpClient, async_get_request_for_existing_resource_succeeds)
                     promise.set_value(response);
                     client->stop();
                 },
-                [&]()
+                [&](const core::net::Error& e)
                 {
-                    promise.set_exception(
-                                std::make_exception_ptr(
-                                    std::runtime_error("Error accessing remote resource")));
+                    promise.set_exception(std::make_exception_ptr(e));
                     client->stop();
                 });
 
@@ -291,11 +290,9 @@ TEST(HttpClient, async_get_request_for_existing_resource_guarded_by_basic_authen
                     promise.set_value(response);
                     client->stop();
                 },
-                [&]()
+                [&](const core::net::Error& e)
                 {
-                    promise.set_exception(
-                                std::make_exception_ptr(
-                                    std::runtime_error("Error accessing remote resource")));
+                    promise.set_exception(std::make_exception_ptr(e));
                     client->stop();
                 });
 

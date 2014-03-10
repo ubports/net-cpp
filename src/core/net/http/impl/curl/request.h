@@ -19,6 +19,8 @@
 #define CORE_NET_HTTP_IMPL_CURL_REQUEST_H_
 
 #include <core/net/http/request.h>
+
+#include <core/net/http/error.h>
 #include <core/net/http/response.h>
 
 #include "curl.h"
@@ -74,7 +76,7 @@ public:
     Response execute(const Request::ProgressHandler& ph)
     {
         if (atomic_state.load() == core::net::http::Request::State::active)
-            throw core::net::http::Request::Errors::AlreadyActive{__PRETTY_FUNCTION__};
+            throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
 
         StateGuard sg{atomic_state};
         Context context;
@@ -124,12 +126,12 @@ public:
                         return size * nmemb;
                     });
 
-        auto rc = easy.perform();
-
-        if (rc != ::curl::Code::ok)
+        try
         {
-            std::stringstream ss; ss << rc;
-            throw Errors::DidNotReceiveResponse{ss.str()};
+            easy.perform();
+        } catch(const std::system_error& se)
+        {
+            throw core::net::http::Error(se.what(), CORE_FROM_HERE());
         }
 
         context.result.status = easy.status();
@@ -144,7 +146,7 @@ public:
             const Request::ErrorHandler& eh)
     {
         if (atomic_state.load() == core::net::http::Request::State::active)
-            throw core::net::http::Request::Errors::AlreadyActive{__PRETTY_FUNCTION__};
+            throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
 
         auto sg = std::make_shared<StateGuard>(atomic_state);
         auto context = std::make_shared<Context>();
@@ -159,7 +161,8 @@ public:
                 rh(context->result);
             } else
             {
-                eh();
+                std::stringstream ss; ss << code;
+                eh(core::net::http::Error(ss.str(), CORE_FROM_HERE()));
             }
         });
 

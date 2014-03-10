@@ -22,7 +22,10 @@ include_directories(${Boost_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS})
 add_library(
   net-cpp SHARED
 
+  core/location.cpp
+  core/net/error.cpp
   core/net/uri.cpp
+  core/net/http/error.cpp
   core/net/http/status.cpp
 
   core/net/http/impl/curl/client.cpp
