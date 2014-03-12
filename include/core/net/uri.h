@@ -23,6 +23,7 @@
 #include <boost/optional.hpp>
 
 #include <cstdint>
+#include <map>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -39,6 +40,8 @@ namespace net
 class CORE_NET_DLL_PUBLIC Uri
 {
 public:
+    typedef std::map<std::string, std::string> Values;
+
     struct Errors
     {
         Errors() = delete;

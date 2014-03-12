@@ -1,3 +1,21 @@
+/*
+ * Copyright © 2013 Canonical Ltd.
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License version 3,
+ * as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Authored by: Thomas Voß <thomas.voss@canonical.com>
+ */
+
 #include <core/net/error.h>
 #include <core/net/uri.h>
 #include <core/net/http/client.h>
@@ -171,7 +189,8 @@ TEST(HttpClient, get_request_for_existing_resource_guarded_by_basic_auth_succeed
     EXPECT_EQ("user", root["user"].asString());
 }
 
-TEST(HttpClient, get_request_for_existing_resource_guarded_by_digest_auth_succeeds)
+// Digest auth is broken on httpbin.org. It even fails in the browser after the first successful access.
+TEST(HttpClient, DISABLED_get_request_for_existing_resource_guarded_by_digest_auth_succeeds)
 {
     // We obtain a default client instance, dispatching to the default implementation.
     auto client = http::make_client();
@@ -341,6 +360,35 @@ TEST(HttpClient, post_request_for_existing_resource_succeeds)
     EXPECT_TRUE(reader.parse(response.body, root));
     // The url field of the payload should equal the original url we requested.
     EXPECT_EQ(payload, root["data"].asString());
+}
+
+TEST(HttpClient, post_form_request_for_existing_resource_succeeds)
+{
+    // We obtain a default client instance, dispatching to the default implementation.
+    auto client = http::make_client();
+
+    // Url pointing to the resource we would like to access via http.
+    auto url = std::string(httpbin::host()) + httpbin::resources::post();
+
+    core::net::Uri::Values values
+    {
+        {"test", "test"}
+    };
+
+    // The client mostly acts as a factory for http requests.
+    auto request = client->post_form(http::Request::Configuration::from_uri_as_string(url),
+                                     values);
+
+    // We finally execute the query synchronously and store the response.
+    auto response = request->execute(default_progress_reporter);
+
+    // All endpoint data on httpbin.org is JSON encoded.
+    json::Value root;
+    json::Reader reader;
+
+    EXPECT_EQ(core::net::http::Status::ok, response.status);
+    EXPECT_TRUE(reader.parse(response.body, root));
+    EXPECT_EQ("test", root["form"]["test"].asString());
 }
 
 TEST(HttpClient, put_request_for_existing_resource_succeeds)

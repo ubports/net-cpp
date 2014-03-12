@@ -24,7 +24,6 @@
 #include <core/net/http/status.h>
 
 #include <map>
-#include <memory>
 #include <sstream>
 #include <string>
 
@@ -34,20 +33,22 @@ namespace net
 {
 namespace http
 {
+/**
+ * @brief The Response struct models a response to a core::net::http::Request.
+ */
 struct CORE_NET_DLL_PUBLIC Response
 {
-    // This really should be a stringstream, but libstdc++ is broken and
+    // TODO(tvoss): This really should be a stringstream, but libstdc++ is broken and
     // does not define move operators correctly.
+    /** @brief The body of the response is a string. */
     typedef std::string Body;
-    typedef std::multimap<Header::Key, Header::Value> Headers;
 
-    Response(Status status = Status::bad_request) : status(status)
-    {
-    }
-
-    Status status;
-    Headers headers;
-    Body body;
+    /** @brief The HTTP status as sent by the server. */
+    Status status{Status::bad_request};
+    /** @brief The header fields of the response. */
+    Header header{};
+    /** @brief The body of the response. */
+    Body body{};
 };
 }
 }

@@ -72,7 +72,7 @@ std::shared_ptr<http::Request> http::impl::curl::Client::get(const http::Request
 std::shared_ptr<http::Request> http::impl::curl::Client::post(
         const Request::Configuration& configuration,
         const std::string& payload,
-        const http::ContentType& ct)
+        const std::string& ct)
 {
     ::curl::easy::Handle handle;
     handle.method(http::Method::post)

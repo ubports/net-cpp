@@ -32,6 +32,11 @@ include_directories(
 )
 
 add_executable(
+  header_test
+  header_test.cpp
+)
+
+add_executable(
   http_client_test
   http_client_test.cpp
 )
@@ -39,6 +44,15 @@ add_executable(
 add_executable(
   uri_test
   uri_test.cpp
+)
+
+target_link_libraries(
+    header_test
+
+    net-cpp
+
+    ${GTEST_BOTH_LIBRARIES}
+    ${JSON_CPP_LIBRARIES}
 )
 
 target_link_libraries(
@@ -58,5 +72,6 @@ target_link_libraries(
     ${GTEST_BOTH_LIBRARIES}
 )
 
+add_test(header_test ${CMAKE_CURRENT_BINARY_DIR}/header_test)
 add_test(http_client_test ${CMAKE_CURRENT_BINARY_DIR}/http_client_test)
 add_test(uri_test ${CMAKE_CURRENT_BINARY_DIR}/uri_test)

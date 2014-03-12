@@ -118,9 +118,9 @@ public:
 
                         if (position != begin && position < end)
                         {
-                            context.result.headers.emplace(
-                                        Header::Key{begin, position},
-                                        Header::Value{position+1, end});
+                            context.result.header.add(
+                                        std::string{begin, position},
+                                        std::string{position+1, end});
                         }
 
                         return size * nmemb;
@@ -204,9 +204,9 @@ public:
 
                         if (position != begin && position < end)
                         {
-                            context->result.headers.emplace(
-                                        Header::Key{begin, position},
-                                        Header::Value{position+1, end});
+                            context->result.header.add(
+                                        std::string{begin, position},
+                                        std::string{position+1, end});
                         }
 
                         return size * nmemb;

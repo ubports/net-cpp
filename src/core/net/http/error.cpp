@@ -18,16 +18,10 @@
 
 #include <core/net/http/error.h>
 
-namespace core
+namespace net = core::net;
+namespace http = core::net::http;
+
+http::Error::Error(const std::string& what, const core::Location& loc)
+    : net::Error(what, loc)
 {
-namespace net
-{
-namespace http
-{
-Error::Error(const std::string& what, const Location& loc)
-    : core::net::Error(what, loc)
-{
-}
-}
-}
 }

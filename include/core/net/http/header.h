@@ -18,6 +18,11 @@
 #ifndef CORE_NET_HTTP_HEADER_H_
 #define CORE_NET_HTTP_HEADER_H_
 
+#include <core/net/visibility.h>
+
+#include <map>
+#include <memory>
+#include <set>
 #include <string>
 
 namespace core
@@ -26,12 +31,63 @@ namespace net
 {
 namespace http
 {
-struct Header
+/**
+ * @brief The Header class encapsulates the headers of an HTTP request/response.
+ */
+class CORE_NET_DLL_PUBLIC Header
 {
-    Header() = delete;
+public:
+    /**
+     * @brief canonicalize_key returns the canonical form of the header key 'key'.
+     *
+     * The canonicalization converts the first
+     * letter and any letter following a hyphen to upper case;
+     * the rest are converted to lowercase.  For example, the
+     * canonical key for "accept-encoding" is "Accept-Encoding".
+     *
+     * @param key The key to be canonicalized.
+     */
+    static std::string canonicalize_key(const std::string& key);
 
-    typedef std::string Key;
-    typedef std::string Value;
+    virtual ~Header() = default;
+
+    /**
+     * @brief has checks if the header contains an entry for the given key with the given value.
+     * @param key The key into the header map.
+     * @param value The value to check for.
+     */
+    virtual bool has(const std::string& key, const std::string& value) const;
+
+    /**
+     * @brief has checks if the header contains any entry for the given key.
+     * @param key The key into the header map.
+     */
+    virtual bool has(const std::string& key) const;
+
+    /**
+     * @brief add adds the given value for the given key to the header.
+     */
+    virtual void add(const std::string& key, const std::string& value);
+
+    /**
+     * @brief remove erases all values for the given key from the header.
+     */
+    virtual void remove(const std::string& key);
+
+    /**
+     * @brief remove erases the given value for the given key from the header.
+     */
+    virtual void remove(const std::string& key, const std::string& value);
+
+    /**
+     * @brief set assigns the given value to the entry with key 'key' and replaces any previous value.
+     */
+    virtual void set(const std::string& key, const std::string& value);
+
+private:
+    /// @cond
+    std::map<std::string, std::set<std::string>> fields;
+    /// @endcond
 };
 }
 }

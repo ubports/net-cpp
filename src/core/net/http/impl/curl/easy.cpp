@@ -114,7 +114,7 @@ std::ostream& curl::operator<<(std::ostream& out, curl::Code code)
     return out << curl_easy_strerror(static_cast<CURLcode>(code));
 }
 
-void curl::easy::perform(curl::Native handle)
+void curl::easy::native::perform(curl::easy::native::Handle handle)
 {
     curl::easy::throw_if_not<curl::Code::ok>(
                 static_cast<curl::Code>(
@@ -290,13 +290,13 @@ easy::Handle& easy::Handle::method(core::net::http::Method method)
     case core::net::http::Method::put:
         set_option(Option::http_put, enable);
         break;
-    default: throw core::net::http::Client::Errors::HttpMethodNotSupported{method};
+    default: throw core::net::http::Client::Errors::HttpMethodNotSupported{method, CORE_FROM_HERE()};
     }
 
     return *this;
 }
 
-easy::Handle& easy::Handle::post_data(const std::string& data, const core::net::http::ContentType&)
+easy::Handle& easy::Handle::post_data(const std::string& data, const std::string&)
 {
     long content_length = data.size();
     set_option(Option::post_field_size, content_length);
@@ -312,14 +312,14 @@ core::net::http::Status easy::Handle::status()
     return static_cast<core::net::http::Status>(result);
 }
 
-curl::Native easy::Handle::native() const
+easy::native::Handle easy::Handle::native() const
 {
     return d->handle.get();
 }
 
 void easy::Handle::perform()
 {
-    easy::perform(d->handle.get());
+    easy::native::perform(d->handle.get());
 }
 
 void easy::Handle::notify_finished(curl::Code code)

@@ -175,7 +175,7 @@ public:
      * @throw core::net::Error in case of network-related errors.
      * @return The response to the request.
      */
-    virtual Response execute(const ProgressHandler&) = 0;
+    virtual Response execute(const ProgressHandler& ph) = 0;
 
     /**
      * @brief Asynchronously executes the request, reporting errors, progress and completion to the given handlers.
@@ -184,7 +184,10 @@ public:
      * @param eh Function to call for reporting errors during the operation.
      * @return The response to the request.
      */
-    virtual void async_execute(const ProgressHandler& ph, const ResponseHandler& rh, const ErrorHandler&) = 0;
+    virtual void async_execute(
+            const ProgressHandler& ph,
+            const ResponseHandler& rh,
+            const ErrorHandler& eh) = 0;
 
 protected:
     Request() = default;

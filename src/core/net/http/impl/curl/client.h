@@ -46,7 +46,7 @@ public:
 
     std::shared_ptr<Request> head(const Request::Configuration& configuration);
 
-    std::shared_ptr<Request> post(const Request::Configuration& configuration, const std::string&, const ContentType&);
+    std::shared_ptr<Request> post(const Request::Configuration& configuration, const std::string&, const std::string&);
 
     std::shared_ptr<Request> put(const Request::Configuration& configuration, std::istream& payload, std::size_t size);
 

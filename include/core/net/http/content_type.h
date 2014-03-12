@@ -26,29 +26,28 @@ namespace net
 {
 namespace http
 {
-class CORE_NET_DLL_PUBLIC ContentType
+/**
+ * @brief Collection of known content types.
+ */
+struct CORE_NET_DLL_PUBLIC ContentType
 {
-public:
-    inline ContentType(const std::string& value) : value(value)
+    ContentType() = delete;
+
+    constexpr static const char* json
     {
-    }
+        "application/json"
+    };
 
-    const std::string& as_string() const
+    constexpr static const char* xml
     {
-        return value;
-    }
+        "application/xml"
+    };
 
-private:
-    std::string value;
-
-public:
-    static const ContentType x_www_form_urlencoded;
-    static const ContentType json;
-    static const ContentType xml;
-    static const ContentType html;
+    constexpr static const char* x_www_form_urlencoded
+    {
+        "application/x-www-form-urlencoded"
+    };
 };
-
-const ContentType ContentType::json{"application/json"};
 }
 }
 }

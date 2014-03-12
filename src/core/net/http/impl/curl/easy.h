@@ -26,12 +26,13 @@
 
 #include <curl/curl.h>
 
+#include <chrono>
 #include <iosfwd>
 #include <system_error>
 
 namespace curl
 {
-typedef CURL* Native;
+typedef std::chrono::duration<double> Seconds;
 
 enum class Code
 {
@@ -92,7 +93,12 @@ std::ostream& operator<<(std::ostream& out, Code code);
 
 enum class Info
 {
-    response_code = CURLINFO_RESPONSE_CODE
+    response_code = CURLINFO_RESPONSE_CODE,
+    namelookup_time = CURLINFO_NAMELOOKUP_TIME,
+    connect_time = CURLINFO_CONNECT_TIME,
+    appconnect_time = CURLINFO_APPCONNECT_TIME,
+    pretransfer_time = CURLINFO_PRETRANSFER_TIME,
+    starttransfer_time = CURLINFO_STARTTRANSFER_TIME
 };
 
 enum class Option
@@ -123,23 +129,14 @@ enum class Option
 
 namespace easy
 {
+// Constant for disabling a feature on a curl easy instance.
 constexpr static const long disable = 0;
+
+// Constant for enabling a feature on a curl easy instance.
 constexpr static const long enable = 1;
 
-void perform(Native handle);
-
-template<typename T>
-inline Code set(Native handle, Option option, T value)
-{
-    return static_cast<Code>(curl_easy_setopt(handle, static_cast<CURLoption>(option), value));
-}
-
-template<typename T>
-inline Code get(Native handle, Info info, T value)
-{
-    return static_cast<Code>(curl_easy_getinfo(handle, static_cast<CURLINFO>(info), value));
-}
-
+// Throws a std::runtime_error if the parameter to the function does match the
+// constant templated value.
 template<Code ref>
 inline void throw_if(Code code)
 {
@@ -150,6 +147,8 @@ inline void throw_if(Code code)
     }
 }
 
+// Throws a std::runtime_error if the parameter to the function does not match the
+// constant templated value.
 template<Code ref>
 inline void throw_if_not(Code code)
 {
@@ -160,48 +159,92 @@ inline void throw_if_not(Code code)
     }
 }
 
+// All curl native types and functions go here.
+namespace native
+{
+// An opaque handle to a curl multi instance.
+typedef CURL* Handle;
+
+// Executes the operation configured on the handle.
+void perform(Handle handle);
+
+// Sets an option on a native curl multi instance.
+template<typename T>
+inline Code set(Handle handle, Option option, T value)
+{
+    return static_cast<Code>(curl_easy_setopt(handle, static_cast<CURLoption>(option), value));
+}
+
+// Reads information off a native curl multi instance.
+template<typename T>
+inline Code get(Handle handle, Info info, T value)
+{
+    return static_cast<Code>(curl_easy_getinfo(handle, static_cast<CURLINFO>(info), value));
+}
+}
+
 class Handle
 {
 public:
+    // Function type that gets called to indicate that an operation finished.
     typedef std::function<void(curl::Code)> OnFinished;
+    // Function type that gets called to report progress of an operation.
     typedef std::function<int(void*, double, double, double, double)> OnProgress;
+    // Function type that gets called whenever data should be read.
     typedef std::function<std::size_t(void*, std::size_t, std::size_t)> OnReadData;
+    // Function type that gets called whenever body/payload data should be written.
     typedef std::function<std::size_t(char*, std::size_t, std::size_t)> OnWriteData;
+    // Function type that gets called whenever header data should be written.
     typedef std::function<std::size_t(void*, std::size_t, std::size_t)> OnWriteHeader;
 
+    // Creates a new handle and initializes the underlying curl easy instance.
     Handle();
 
+    // Queries information from the instance.
     template<typename T, typename U>
     inline void get_option(T option, U value)
     {
-        throw_if_not<Code::ok>(get(native(), option, value));
+        throw_if_not<Code::ok>(native::get(native(), option, value));
     }
 
+    // Sets an option on the instance.
     template<typename T>
     inline void set_option(Option option, T value)
     {
-        throw_if_not<Code::ok>(set(native(), option, value));
+        throw_if_not<Code::ok>(native::set(native(), option, value));
     }
 
+    // Adjusts the url that the instance should download.
     Handle& url(const char* url);
+    // Adjusts the user agent that is passed in the request.
     Handle& user_agent(const char* user_agent);
+    // Adjusts the credentials of the request.
     Handle& http_credentials(const std::string& username, const std::string& pwd);
+    // Sets the OnFinished handler.
     Handle& on_finished(const OnFinished& on_finished);
+    // Sets the OnProgress handler.
     Handle& on_progress(const OnProgress& on_progress);
+    // Sets the OnReadData handler.
     Handle& on_read_data(const OnProgress& on_progress);
     Handle& on_read_data(const OnReadData& on_read_data, std::size_t size);
+    // Sets the OnWriteData handler.
     Handle& on_write_data(const OnWriteData& on_new_data);
+    // Sets the OnWriteHeader handler.
     Handle& on_write_header(const OnWriteHeader& on_new_header);
-
+    // Sets the http method used by this instance.
     Handle& method(core::net::http::Method method);
-    Handle& post_data(const std::string& data, const core::net::http::ContentType&);
+    // Sets the data to be posted by this instance.
+    Handle& post_data(const std::string& data, const std::string&);
 
+    // Queries the current status of this instance.
     core::net::http::Status status();
+    // Queries the native curl easy handle.
+    native::Handle native() const;
 
-    Native native() const;
-
+    // Executes the operation associated with this handle.
     void perform();
 
+    // Notifies this instance that the operation finished with 'code'.
     void notify_finished(curl::Code code);
 
 private:

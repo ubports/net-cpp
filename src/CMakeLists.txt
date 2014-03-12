@@ -23,9 +23,13 @@ add_library(
   net-cpp SHARED
 
   core/location.cpp
+
   core/net/error.cpp
   core/net/uri.cpp
+
+  core/net/http/client.cpp
   core/net/http/error.cpp
+  core/net/http/header.cpp
   core/net/http/status.cpp
 
   core/net/http/impl/curl/client.cpp

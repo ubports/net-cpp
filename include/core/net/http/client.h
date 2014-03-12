@@ -46,8 +46,9 @@ public:
         /** @brief HttpMethodNotSupported is thrown if the underlying impl.
          * does not support the requested HTTP method.
          */
-        struct HttpMethodNotSupported
+        struct HttpMethodNotSupported : public http::Error
         {
+            HttpMethodNotSupported(Method method, const core::Location&);
             Method method;
         };
     };
@@ -102,10 +103,20 @@ public:
      * @brief post is a convenience method for issuing a POST request for the given URI.
      * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
      * @param configuration The configuration to issue a get request for.
-     * @param payload The data to be transmitted as part of the PUT request.
+     * @param payload The data to be transmitted as part of the POST request.
+     * @param type The content-type of the data.
      * @return An executable instance of class Request.
      */
-    virtual std::shared_ptr<Request> post(const Request::Configuration& configuration, const std::string& payload, const ContentType& type) = 0;
+    virtual std::shared_ptr<Request> post(const Request::Configuration& configuration, const std::string& payload, const std::string& type) = 0;
+
+    /**
+     * @brief post_form is a convenience method for issuing a POST request for the given URI, with url-encoded payload.
+     * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
+     * @param configuration The configuration to issue a get request for.
+     * @param values Key-value pairs to be added to the payload in url-encoded format.
+     * @return An executable instance of class Request.
+     */
+    virtual std::shared_ptr<Request> post_form(const Request::Configuration& configuration, const Uri::Values& values);
 
 protected:
     Client() = default;

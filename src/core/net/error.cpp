@@ -20,13 +20,7 @@
 
 #include <core/location.h>
 
-namespace core
-{
-namespace net
-{
-Error::Error(const std::string& what, const Location& loc)
+core::net::Error::Error(const std::string& what, const core::Location& loc)
     : std::runtime_error(loc.print_with_what(what).c_str())
 {
-}
-}
 }

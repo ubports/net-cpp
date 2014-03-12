@@ -30,8 +30,8 @@
 #include <map>
 #include <mutex>
 
-namespace easy = curl::easy;
-namespace multi = curl::multi;
+namespace easy = ::curl::easy;
+namespace multi = ::curl::multi;
 
 namespace
 {
@@ -71,59 +71,76 @@ struct Holder
 };
 }
 
-namespace curl
-{
-namespace multi
-{
-enum class Code
-{
-    call_multi_perform = CURLM_CALL_MULTI_PERFORM,
-    ok = CURLM_OK,
-    bad_handle = CURLM_BAD_HANDLE,
-    easy_handle = CURLM_BAD_EASY_HANDLE,
-    out_of_memory = CURLM_OUT_OF_MEMORY,
-    internal_error = CURLM_INTERNAL_ERROR,
-    bad_socket = CURLM_BAD_SOCKET,
-    unknown_option = CURLM_UNKNOWN_OPTION,
-    added_already = CURLM_ADDED_ALREADY
-};
-
-inline std::ostream& operator<<(std::ostream& out, Code code)
+std::ostream& multi::operator<<(std::ostream& out, multi::Code code)
 {
     switch (code)
     {
-    case Code::call_multi_perform: out << "curl::multi::Code::call_multi_perform"; break;
-    case Code::ok: out << "curl::multi::Code::ok"; break;
-    case Code::bad_handle: out << "curl::multi::Code::bad_handle"; break;
-    case Code::easy_handle: out << "curl::multi::Code::easy_handle"; break;
-    case Code::out_of_memory: out << "curl::multi::Code::out_of_memory"; break;
-    case Code::internal_error: out << "curl::multi::Code::internal_error"; break;
-    case Code::bad_socket: out << "curl::multi::Code::bad_socket"; break;
-    case Code::unknown_option: out << "curl::multi::Code::unknown_option"; break;
-    case Code::added_already: out << "curl::multi::Code::added_already"; break;
+    case multi::Code::call_multi_perform: out << "curl::multi::Code::call_multi_perform"; break;
+    case multi::Code::ok: out << "curl::multi::Code::ok"; break;
+    case multi::Code::bad_handle: out << "curl::multi::Code::bad_handle"; break;
+    case multi::Code::bad_easy_handle: out << "curl::multi::Code::easy_handle"; break;
+    case multi::Code::out_of_memory: out << "curl::multi::Code::out_of_memory"; break;
+    case multi::Code::internal_error: out << "curl::multi::Code::internal_error"; break;
+    case multi::Code::bad_socket: out << "curl::multi::Code::bad_socket"; break;
+    case multi::Code::unknown_option: out << "curl::multi::Code::unknown_option"; break;
+    case multi::Code::added_already: out << "curl::multi::Code::added_already"; break;
     }
 
     return out;
 }
 
-namespace option
+multi::native::Handle multi::native::init()
 {
-    const CURLMoption socket_function = CURLMOPT_SOCKETFUNCTION;
-    const CURLMoption socket_data = CURLMOPT_SOCKETDATA;
-    const CURLMoption timer_function = CURLMOPT_TIMERFUNCTION;
-    const CURLMoption timer_data = CURLMOPT_TIMERDATA;
+    return curl_multi_init();
 }
+
+multi::Code multi::native::cleanup(multi::native::Handle handle)
+{
+    return static_cast<multi::Code>(curl_multi_cleanup(handle));
 }
+
+multi::Code multi::native::assign(multi::native::Handle handle, multi::native::Socket socket, void* cookie)
+{
+    return static_cast<multi::Code>(curl_multi_assign(handle, socket, cookie));
+}
+
+multi::Code multi::native::add_handle(multi::native::Handle m, easy::native::Handle e)
+{
+    return static_cast<multi::Code>(curl_multi_add_handle(m, e));
+}
+
+multi::Code multi::native::remove_handle(multi::native::Handle m, easy::native::Handle e)
+{
+    return static_cast<multi::Code>(curl_multi_remove_handle(m, e));
+}
+
+std::pair<multi::native::Message, int> multi::native::read_info(multi::native::Handle handle)
+{
+    int count{-1};
+    auto msg = curl_multi_info_read(handle, &count);
+
+    return std::make_pair(msg, count);
+}
+
+std::pair<multi::Code, int> multi::native::socket_action(multi::native::Handle handle, multi::native::Socket socket, int events)
+{
+    int count{-1};
+    auto rc = static_cast<multi::Code>(
+                curl_multi_socket_action(
+                    handle,
+                    socket,
+                    events,
+                    &count));
+
+    return std::make_pair(rc, count);
 }
 
 struct multi::Handle::Private
 {
     void process_multi_info();
 
-    void remove(curl::easy::Handle easy);
-
-    static int curl_timer_callback(
-            CURLM*,
+    static int timer_callback(
+            multi::native::Handle,
             long timeout_ms,
             void* cookie);
 
@@ -153,9 +170,9 @@ struct multi::Handle::Private
         std::shared_ptr<Private> d;
     };
 
-    static int curl_socket_callback(
-            CURL*,
-            curl_socket_t s,
+    static int socket_callback(
+            easy::native::Handle,
+            multi::native::Socket s,
             int action,
             void* cookie,
             void* socket_cookie);
@@ -163,7 +180,7 @@ struct multi::Handle::Private
     struct Socket
     {
         Socket(boost::asio::io_service& dispatcher,
-               curl_socket_t native);
+               multi::native::Socket native);
         ~Socket();
 
         void async_wait_for_readable(const std::shared_ptr<Handle::Private>& context);
@@ -172,7 +189,7 @@ struct multi::Handle::Private
         struct Private : public std::enable_shared_from_this<Private>
         {
             Private(boost::asio::io_service& dispatcher,
-                    curl_socket_t native);
+                    multi::native::Socket native);
             ~Private();
 
             void cancel();
@@ -188,7 +205,7 @@ struct multi::Handle::Private
     Private();
     ~Private();
 
-    CURLM* handle;
+    multi::native::Handle handle;
     boost::asio::io_service dispatcher;
     boost::asio::io_service::work keep_alive;
     SynchronizedHandleStore handle_store;
@@ -198,10 +215,11 @@ struct multi::Handle::Private
 multi::Handle::Handle() : d(new Private())
 {
     auto holder = new Holder<Private>{d};
-    curl_multi_setopt(d->handle, option::socket_function, Private::curl_socket_callback);
-    curl_multi_setopt(d->handle, option::socket_data, holder);
-    curl_multi_setopt(d->handle, option::timer_function, Private::curl_timer_callback);
-    curl_multi_setopt(d->handle, option::timer_data, holder);
+
+    set_option(Option::socket_function, Private::socket_callback);
+    set_option(Option::socket_data, holder);
+    set_option(Option::timer_function, Private::timer_callback);
+    set_option(Option::timer_data, holder);
 }
 
 void multi::Handle::run()
@@ -217,52 +235,56 @@ void multi::Handle::stop()
 void multi::Handle::add(easy::Handle easy)
 {
     d->handle_store.add(easy);
-    curl_multi_add_handle(native(), easy.native());
+    multi::throw_if_not<multi::Code::ok>(
+                multi::native::add_handle(
+                    native(),
+                    easy.native()));
 }
 
 void multi::Handle::remove(easy::Handle easy)
 {
     d->handle_store.remove(easy);
-    curl_multi_remove_handle(native(), easy.native());
+    multi::throw_if_not<multi::Code::ok>(
+                multi::native::remove_handle(
+                    native(),
+                    easy.native()));
 }
 
-curl::easy::Handle multi::Handle::easy_handle_from_native(CURL* native)
+curl::easy::Handle multi::Handle::easy_handle_from_native(easy::native::Handle native)
 {
     return d->handle_store.lookup_native(native);
 }
 
-multi::Native multi::Handle::native() const
+multi::native::Handle multi::Handle::native() const
 {
     return d->handle;
 }
 
 void multi::Handle::Private::process_multi_info()
 {
-    CURLMsg* msg{nullptr};
-
-    int msg_count;
-    while ((msg = curl_multi_info_read(handle, &msg_count)))
+    while (true)
     {
+        multi::native::Message msg;
+        int count;
+
+        std::tie(msg, count) = multi::native::read_info(handle);
+
+        if (!msg)
+            break;
+
         if (msg->msg == CURLMSG_DONE)
         {
             auto native_easy = msg->easy_handle;
             auto rc = static_cast<curl::Code>(msg->data.result);
             try
             {
-                auto easy = handle_store.lookup_native(native_easy);
-                easy.notify_finished(rc);
-                remove(easy);
+                handle_store.lookup_native(native_easy).notify_finished(rc);
+                multi::native::remove_handle(handle, native_easy);
             } catch(...)
             {
             }
         }
     }
-}
-
-void multi::Handle::Private::remove(curl::easy::Handle easy)
-{
-    handle_store.remove(easy);
-    curl_multi_remove_handle(handle, easy.native());
 }
 
 multi::Handle::Private::Timeout::Timeout(boost::asio::io_service& dispatcher) : d(new Private(dispatcher))
@@ -308,13 +330,14 @@ void multi::Handle::Private::Timeout::Private::async_wait_for(const std::shared_
 
 void multi::Handle::Private::Timeout::Private::handle_timeout(const std::shared_ptr<Handle::Private>& context)
 {
-    int still_running{0};
-    curl_multi_socket_action(context->handle, CURL_SOCKET_TIMEOUT, 0, &still_running);
+    auto result = multi::native::socket_action(context->handle, CURL_SOCKET_TIMEOUT, 0);
+    multi::throw_if_not<multi::Code::ok>(result.first);
+
     context->process_multi_info();
 }
 
-int multi::Handle::Private::curl_timer_callback(
-        CURLM*,
+int multi::Handle::Private::timer_callback(
+        multi::native::Handle,
         long timeout_ms,
         void* cookie)
 {
@@ -334,7 +357,7 @@ int multi::Handle::Private::curl_timer_callback(
 }
 
 multi::Handle::Private::Socket::Socket(boost::asio::io_service& dispatcher,
-                                       curl_socket_t native)
+                                       multi::native::Socket native)
     : d(new Private(dispatcher, native))
 {
 }
@@ -355,7 +378,7 @@ void multi::Handle::Private::Socket::async_wait_for_writeable(const std::shared_
 }
 
 multi::Handle::Private::Socket::Socket::Private::Private(boost::asio::io_service& dispatcher,
-                                                         curl_socket_t native)
+                                                         multi::native::Socket native)
     : cancel_requested(false),
       sd(dispatcher, static_cast<int>(native))
 {
@@ -390,19 +413,15 @@ void multi::Handle::Private::Socket::Socket::Private::async_wait_for_readable(co
         else
             bitmask = CURL_CSELECT_IN;
 
-        int still_running;
-        curl_multi_socket_action(
-                    context->handle,
-                    sd.native_handle(),
-                    bitmask,
-                    &still_running);
+        auto result = multi::native::socket_action(context->handle, sd.native_handle(), bitmask);
+        multi::throw_if_not<multi::Code::ok>(result.first);
 
         context->process_multi_info();
 
         // Restart
         async_wait_for_readable(context);
 
-        if (still_running <= 0)
+        if (result.second <= 0)
             context->timeout.cancel();
     });
 }
@@ -426,26 +445,22 @@ void multi::Handle::Private::Socket::Socket::Private::async_wait_for_writeable(
         else
             bitmask = CURL_CSELECT_OUT;
 
-        int still_running;
-        curl_multi_socket_action(
-                    context->handle,
-                    sd.native_handle(),
-                    bitmask,
-                    &still_running);
+        auto result = multi::native::socket_action(context->handle, sd.native_handle(), bitmask);
+        multi::throw_if_not<multi::Code::ok>(result.first);
 
         context->process_multi_info();
 
         // Restart
         async_wait_for_writeable(context);
 
-        if (still_running <= 0)
+        if (result.second <= 0)
             context->timeout.cancel();
     });
 }
 
-int multi::Handle::Private::curl_socket_callback(
-        CURL*,
-        curl_socket_t s,
+int multi::Handle::Private::socket_callback(
+        easy::native::Handle,
+        multi::native::Socket s,
         int action,
         void* cookie,
         void* socket_cookie)
@@ -463,7 +478,7 @@ int multi::Handle::Private::curl_socket_callback(
     if (!socket)
     {
         socket = new Socket{thiz->dispatcher, s};
-        curl_multi_assign(thiz->handle, s, socket);
+        multi::throw_if_not<multi::Code::ok>(multi::native::assign(thiz->handle, s, socket));
     }
 
     switch (action)
@@ -484,7 +499,7 @@ int multi::Handle::Private::curl_socket_callback(
         break;
     case CURL_POLL_REMOVE:
     {
-        curl_multi_assign(thiz->handle, s, nullptr);
+        multi::native::assign(thiz->handle, s, nullptr);
         delete socket;
         break;
     }
@@ -494,7 +509,7 @@ int multi::Handle::Private::curl_socket_callback(
 }
 
 multi::Handle::Private::Private()
-    : handle(curl_multi_init()),
+    : handle(multi::native::init()),
       keep_alive(dispatcher),
       timeout(dispatcher)
 {
@@ -502,5 +517,5 @@ multi::Handle::Private::Private()
 
 multi::Handle::Private::~Private()
 {
-    curl_multi_cleanup(handle);
+    multi::native::cleanup(handle);
 }
