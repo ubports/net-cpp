@@ -33,7 +33,6 @@ namespace shared = ::curl::shared;
 
 namespace
 {
-
 struct Init
 {
     Init()
@@ -46,67 +45,6 @@ struct Init
         curl_global_cleanup();
     }
 } init;
-
-template<std::size_t capacity>
-struct Pool
-{
-    static Pool<capacity>& instance()
-    {
-        static Pool<capacity> inst;
-        return inst;
-    }
-
-    std::shared_ptr<CURL> acquire_or_wait_for(const std::chrono::microseconds& timeout)
-    {
-        std::shared_ptr<CURL> result = nullptr;
-        std::unique_lock<std::mutex> ul(guard);
-        if (!handles.empty())
-        {
-            result = handles.top();
-            handles.pop();
-        } else if (size < capacity)
-        {
-            auto handle = curl_easy_init();
-            if (handle)
-            {
-                size++;
-                result = std::shared_ptr<CURL>(handle, [this](CURL* ptr)
-                {
-                    curl_easy_cleanup(ptr);
-                });
-                handles.push(result);
-            }
-        } else
-        {
-            if (wait_condition.wait_for(ul, timeout, [this]() { return !handles.empty(); }))
-            {
-                result = handles.top();
-                handles.pop();
-            }
-        }
-
-        // We are reusing handles, thus we need to make sure to reset options.
-        if (result)
-            curl_easy_reset(result.get());
-
-        return result;
-    }
-
-    void release(const std::shared_ptr<CURL>& handle)
-    {
-        if (!handle)
-            return;
-
-        std::unique_lock<std::mutex> ul(guard);
-        handles.push(handle);
-        wait_condition.notify_one();
-    }
-
-    std::mutex guard;
-    std::condition_variable wait_condition;
-    std::atomic<std::size_t> size;
-    std::stack<std::shared_ptr<CURL>> handles;
-};
 }
 
 std::ostream& curl::operator<<(std::ostream& out, curl::Code code)
@@ -123,13 +61,8 @@ void curl::easy::native::perform(curl::easy::native::Handle handle)
 
 struct easy::Handle::Private
 {
-    Private() : handle(Pool<100>::instance().acquire_or_wait_for(std::chrono::microseconds{1000}))
+    Private() : handle(curl_easy_init(), [](CURL* ptr) { curl_easy_cleanup(ptr); })
     {
-    }
-
-    ~Private()
-    {
-        Pool<100>::instance().release(handle);
     }
 
     std::shared_ptr<CURL> handle;
@@ -203,6 +136,33 @@ easy::Handle::Handle() : d(new Private())
 {
     set_option(Option::http_auth, CURLAUTH_ANY);
     set_option(Option::sharing, d->shared.native());
+    set_option(Option::no_signal, easy::enable);
+}
+
+void easy::Handle::reset()
+{
+    d.reset();
+}
+
+easy::Handle::Timings easy::Handle::timings()
+{
+    easy::Handle::Timings result;
+    double value;
+
+    get_option(::curl::Info::namelookup_time, &value);
+    result.name_look_up = easy::Handle::Timings::Seconds{value};
+    get_option(::curl::Info::connect_time, &value);
+    result.connect = easy::Handle::Timings::Seconds{value};
+    get_option(::curl::Info::appconnect_time, &value);
+    result.app_connect = easy::Handle::Timings::Seconds{value};
+    get_option(::curl::Info::pretransfer_time, &value);
+    result.pre_transfer = easy::Handle::Timings::Seconds{value};
+    get_option(::curl::Info::starttransfer_time, &value);
+    result.start_transfer = easy::Handle::Timings::Seconds{value};
+    get_option(::curl::Info::total_time, &value);
+    result.total = easy::Handle::Timings::Seconds{value};
+
+    return result;
 }
 
 easy::Handle& easy::Handle::url(const char* url)

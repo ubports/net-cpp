@@ -27,6 +27,12 @@ namespace http = core::net::http;
 
 http::impl::curl::Client::Client()
 {
+    multi.set_option(::curl::multi::Option::pipelining, ::curl::easy::enable);
+}
+
+core::net::http::Client::Timings http::impl::curl::Client::timings()
+{
+    return multi.timings();
 }
 
 void http::impl::curl::Client::run()

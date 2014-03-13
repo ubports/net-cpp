@@ -25,10 +25,19 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
 
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
+#include <boost/accumulators/statistics/max.hpp>
+#include <boost/accumulators/statistics/min.hpp>
+#include <boost/accumulators/statistics/mean.hpp>
+#include <boost/accumulators/statistics/variance.hpp>
+
 #include <condition_variable>
 #include <iostream>
 #include <map>
 #include <mutex>
+
+namespace acc = boost::accumulators;
 
 namespace easy = ::curl::easy;
 namespace multi = ::curl::multi;
@@ -202,14 +211,47 @@ struct multi::Handle::Private
         std::shared_ptr<Private> d;
     };
 
+    typedef acc::accumulator_set<
+        double,
+        acc::stats<
+            acc::tag::min,
+            acc::tag::max,
+            acc::tag::mean,
+            acc::tag::variance
+        >
+    > Accumulator;
+
+    static void fill_from_accumulator(core::net::http::Client::Timings::Statistics& stats,
+                                      const multi::Handle::Private::Accumulator& accu)
+    {
+        typedef core::net::http::Client::Timings::Seconds Seconds;
+        stats.max = Seconds{acc::max(accu)};
+        stats.min = Seconds{acc::min(accu)};
+        stats.mean = Seconds{acc::mean(accu)};
+        stats.variance = Seconds{acc::variance(accu)};
+    }
+
     Private();
     ~Private();
+
+    void update_timings(const easy::Handle::Timings& timings);
 
     multi::native::Handle handle;
     boost::asio::io_service dispatcher;
     boost::asio::io_service::work keep_alive;
+    std::mutex guard;
     SynchronizedHandleStore handle_store;
     Timeout timeout;
+
+    struct
+    {
+        Accumulator for_name_look_up{};
+        Accumulator for_connect{};
+        Accumulator for_app_connect{};
+        Accumulator for_pre_transfer{};
+        Accumulator for_start_transfer{};
+        Accumulator for_total{};
+    } accumulator;
 };
 
 multi::Handle::Handle() : d(new Private())
@@ -220,6 +262,20 @@ multi::Handle::Handle() : d(new Private())
     set_option(Option::socket_data, holder);
     set_option(Option::timer_function, Private::timer_callback);
     set_option(Option::timer_data, holder);
+}
+
+core::net::http::Client::Timings multi::Handle::timings()
+{
+    core::net::http::Client::Timings result;
+
+    Private::fill_from_accumulator(result.name_look_up, d->accumulator.for_name_look_up);
+    Private::fill_from_accumulator(result.connect, d->accumulator.for_connect);
+    Private::fill_from_accumulator(result.app_connect, d->accumulator.for_app_connect);
+    Private::fill_from_accumulator(result.pre_transfer, d->accumulator.for_pre_transfer);
+    Private::fill_from_accumulator(result.start_transfer, d->accumulator.for_start_transfer);
+    Private::fill_from_accumulator(result.total, d->accumulator.for_total);
+
+    return result;
 }
 
 void multi::Handle::run()
@@ -234,6 +290,8 @@ void multi::Handle::stop()
 
 void multi::Handle::add(easy::Handle easy)
 {
+    std::lock_guard<std::mutex> lg(d->guard);
+
     d->handle_store.add(easy);
     multi::throw_if_not<multi::Code::ok>(
                 multi::native::add_handle(
@@ -278,7 +336,12 @@ void multi::Handle::Private::process_multi_info()
             auto rc = static_cast<curl::Code>(msg->data.result);
             try
             {
-                handle_store.lookup_native(native_easy).notify_finished(rc);
+                auto easy = handle_store.lookup_native(native_easy);
+
+                update_timings(easy.timings());
+
+                easy.notify_finished(rc);
+                handle_store.remove(easy);
                 multi::native::remove_handle(handle, native_easy);
             } catch(...)
             {
@@ -311,7 +374,7 @@ void multi::Handle::Private::Timeout::Private::cancel()
 
 void multi::Handle::Private::Timeout::Private::async_wait_for(const std::shared_ptr<Handle::Private>& context, const std::chrono::milliseconds& ms)
 {
-    if (ms.count() > 0)
+    if (ms.count() >= 0)
     {
         auto self(shared_from_this());
         timer.expires_from_now(boost::posix_time::milliseconds{ms.count()});
@@ -320,6 +383,7 @@ void multi::Handle::Private::Timeout::Private::async_wait_for(const std::shared_
             if (ec)
                 return;
 
+            std::lock_guard<std::mutex> lg(context->guard);
             handle_timeout(context);
         });
     } else if (ms.count() == 0)
@@ -406,23 +470,27 @@ void multi::Handle::Private::Socket::Socket::Private::async_wait_for_readable(co
         if (cancel_requested)
             return;
 
-        int bitmask{0};
+        {
+            std::lock_guard<std::mutex> lg(context->guard);
 
-        if (ec)
-            bitmask = CURL_CSELECT_ERR;
-        else
-            bitmask = CURL_CSELECT_IN;
+            int bitmask{0};
 
-        auto result = multi::native::socket_action(context->handle, sd.native_handle(), bitmask);
-        multi::throw_if_not<multi::Code::ok>(result.first);
+            if (ec)
+                bitmask = CURL_CSELECT_ERR;
+            else
+                bitmask = CURL_CSELECT_IN;
 
-        context->process_multi_info();
+            auto result = multi::native::socket_action(context->handle, sd.native_handle(), bitmask);
+            multi::throw_if_not<multi::Code::ok>(result.first);
+
+            context->process_multi_info();
+
+            if (result.second <= 0)
+                context->timeout.cancel();
+        }
 
         // Restart
         async_wait_for_readable(context);
-
-        if (result.second <= 0)
-            context->timeout.cancel();
     });
 }
 
@@ -438,23 +506,26 @@ void multi::Handle::Private::Socket::Socket::Private::async_wait_for_writeable(
         if (cancel_requested)
             return;
 
-        int bitmask{0};
+        {
+            std::lock_guard<std::mutex> lg(context->guard);
 
-        if (ec)
-            bitmask = CURL_CSELECT_ERR;
-        else
-            bitmask = CURL_CSELECT_OUT;
+            int bitmask{0};
 
-        auto result = multi::native::socket_action(context->handle, sd.native_handle(), bitmask);
-        multi::throw_if_not<multi::Code::ok>(result.first);
+            if (ec)
+                bitmask = CURL_CSELECT_ERR;
+            else
+                bitmask = CURL_CSELECT_OUT;
 
-        context->process_multi_info();
+            auto result = multi::native::socket_action(context->handle, sd.native_handle(), bitmask);
+            multi::throw_if_not<multi::Code::ok>(result.first);
 
+            context->process_multi_info();
+
+            if (result.second <= 0)
+                context->timeout.cancel();
+        }
         // Restart
         async_wait_for_writeable(context);
-
-        if (result.second <= 0)
-            context->timeout.cancel();
     });
 }
 
@@ -518,4 +589,14 @@ multi::Handle::Private::Private()
 multi::Handle::Private::~Private()
 {
     multi::native::cleanup(handle);
+}
+
+void multi::Handle::Private::update_timings(const easy::Handle::Timings& timings)
+{
+    accumulator.for_name_look_up(timings.name_look_up.count());
+    accumulator.for_connect(timings.connect.count());
+    accumulator.for_app_connect(timings.app_connect.count());
+    accumulator.for_pre_transfer(timings.pre_transfer.count());
+    accumulator.for_start_transfer(timings.start_transfer.count());
+    accumulator.for_total(timings.total.count());
 }

@@ -98,11 +98,13 @@ enum class Info
     connect_time = CURLINFO_CONNECT_TIME,
     appconnect_time = CURLINFO_APPCONNECT_TIME,
     pretransfer_time = CURLINFO_PRETRANSFER_TIME,
-    starttransfer_time = CURLINFO_STARTTRANSFER_TIME
+    starttransfer_time = CURLINFO_STARTTRANSFER_TIME,
+    total_time = CURLINFO_TOTAL_TIME
 };
 
 enum class Option
 {
+    cache_dns_timeout = CURLOPT_DNS_CACHE_TIMEOUT,
     header_function = CURLOPT_HEADERFUNCTION,
     header_data = CURLOPT_HEADERDATA,
     progress_function = CURLOPT_PROGRESSFUNCTION,
@@ -124,7 +126,9 @@ enum class Option
     in_file_size = CURLOPT_INFILESIZE,
     sharing = CURLOPT_SHARE,
     username = CURLOPT_USERNAME,
-    password = CURLOPT_PASSWORD
+    password = CURLOPT_PASSWORD,
+    no_signal = CURLOPT_NOSIGNAL,
+    verbose = CURLOPT_VERBOSE
 };
 
 namespace easy
@@ -186,6 +190,24 @@ inline Code get(Handle handle, Info info, T value)
 class Handle
 {
 public:
+    struct Timings
+    {
+        typedef std::chrono::duration<double> Seconds;
+
+        // Time it took from the start until the name resolving was completed.
+        Seconds name_look_up{Seconds::max()};
+        // Time it took from the finished name lookup until the connect to the remote host (or proxy) was completed.
+        Seconds connect{Seconds::max()};
+        // Time it took from the connect until the SSL/SSH connect/handshake to the remote host was completed.
+        Seconds app_connect{Seconds::max()};
+        // Time it took from app_connect until the file transfer is just about to begin.
+        Seconds pre_transfer{Seconds::max()};
+        // Time it took from pre-transfer until the first byte is received by libcurl.
+        Seconds start_transfer{Seconds::max()};
+        // Time in total that the previous transfer took.
+        Seconds total{Seconds::max()};
+    };
+
     // Function type that gets called to indicate that an operation finished.
     typedef std::function<void(curl::Code)> OnFinished;
     // Function type that gets called to report progress of an operation.
@@ -199,6 +221,12 @@ public:
 
     // Creates a new handle and initializes the underlying curl easy instance.
     Handle();
+
+    // Resets the handle, and all its callbacks.
+    void reset();
+
+    // Queries the timing information of the last execution from the native curl handle.
+    Timings timings();
 
     // Queries information from the instance.
     template<typename T, typename U>

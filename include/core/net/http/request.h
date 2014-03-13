@@ -45,8 +45,9 @@ public:
      */
     enum class State
     {
-        idle, ///< The request is idle and needs execution.
-        active ///< The request is active and is actively being executed.
+        ready, ///< The request is idle and needs execution.
+        active, ///< The request is active and is actively being executed.
+        done ///< Execution of the request has finished.
     };
 
     /**

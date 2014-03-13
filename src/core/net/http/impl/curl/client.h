@@ -38,6 +38,8 @@ public:
     Client();
 
     // From core::net::http::Client
+    core::net::http::Client::Timings timings();
+
     void run();
 
     void stop();

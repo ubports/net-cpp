@@ -44,25 +44,30 @@ namespace curl
 // of StateGuard goes out of scope.
 struct StateGuard
 {
-    StateGuard(std::atomic<core::net::http::Request::State>& state) : state(state)
+    StateGuard(::curl::easy::Handle easy,
+               std::atomic<core::net::http::Request::State>& state)
+        : easy(easy),
+          state(state)
     {
         state.store(core::net::http::Request::State::active);
     }
 
     ~StateGuard()
     {
-        state.store(core::net::http::Request::State::idle);
+        state.store(core::net::http::Request::State::done);
+        easy.reset();
     }
 
+    ::curl::easy::Handle easy;
     std::atomic<core::net::http::Request::State>& state;
 };
 
 class Request : public core::net::http::Request
 {
 public:
-    Request(::curl::multi::Handle& multi,
+    Request(::curl::multi::Handle multi,
             const ::curl::easy::Handle& easy)
-        : atomic_state(core::net::http::Request::State::idle),
+        : atomic_state(core::net::http::Request::State::ready),
           multi(multi),
           easy(easy)
     {
@@ -75,10 +80,10 @@ public:
 
     Response execute(const Request::ProgressHandler& ph)
     {
-        if (atomic_state.load() == core::net::http::Request::State::active)
+        if (atomic_state.load() != core::net::http::Request::State::ready)
             throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
 
-        StateGuard sg{atomic_state};
+        StateGuard sg{easy, atomic_state};
         Context context;
 
         if (ph)
@@ -145,10 +150,10 @@ public:
             const Request::ResponseHandler& rh,
             const Request::ErrorHandler& eh)
     {
-        if (atomic_state.load() == core::net::http::Request::State::active)
+        if (atomic_state.load() != core::net::http::Request::State::ready)
             throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
 
-        auto sg = std::make_shared<StateGuard>(atomic_state);
+        auto sg = std::make_shared<StateGuard>(easy, atomic_state);
         auto context = std::make_shared<Context>();
 
         easy.on_finished([=](::curl::Code code)
@@ -164,6 +169,8 @@ public:
                 std::stringstream ss; ss << code;
                 eh(core::net::http::Error(ss.str(), CORE_FROM_HERE()));
             }
+
+            easy.reset();
         });
 
         if (ph)
@@ -217,7 +224,7 @@ public:
 
 private:
     std::atomic<core::net::http::Request::State> atomic_state;
-    ::curl::multi::Handle& multi;
+    ::curl::multi::Handle multi;
     ::curl::easy::Handle easy;
 
     struct Context

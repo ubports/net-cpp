@@ -23,6 +23,7 @@
 #include <core/net/http/method.h>
 #include <core/net/http/request.h>
 
+#include <chrono>
 #include <iosfwd>
 #include <memory>
 
@@ -53,11 +54,48 @@ public:
         };
     };
 
+    /** @brief Summarizes timing information about completed requests. */
+    struct Timings
+    {
+        typedef std::chrono::duration<double> Seconds;
+
+        struct Statistics
+        {
+            /** Maximum duration that was encountered. */
+            Seconds max{Seconds::max()};
+            /** Minimum duration that was encountered. */
+            Seconds min{Seconds::max()};
+            /** Mean duration that was encountered. */
+            Seconds mean{Seconds::max()};
+            /** Variance in duration that was encountered. */
+            Seconds variance{Seconds::max()};
+        };
+
+        /** Time it took from the start until the name resolving was completed. */
+        Statistics name_look_up{};
+        /** Time it took from the finished name lookup until the connect to the
+         * remote host (or proxy) was completed.
+         */
+        Statistics connect{};
+        /** Time it took from the connect until the SSL/SSH connect/handshake to
+         * the remote host was completed.
+         */
+        Statistics app_connect{};
+        /** Time it took from app_connect until the file transfer is just about to begin. */
+        Statistics pre_transfer{};
+        /** Time it took from pre-transfer until the first byte is received by libcurl. */
+        Statistics start_transfer{};
+        /** Time in total that the previous transfer took. */
+        Statistics total{};
+    };
+
     Client(const Client&) = delete;
     virtual ~Client() = default;
 
     Client& operator=(const Client&) = delete;
     bool operator==(const Client&) const = delete;
+
+    virtual Timings timings() = 0;
 
     /** @brief Execute the client and any impl-specific thread-pool or runtime. */
     virtual void run() = 0;

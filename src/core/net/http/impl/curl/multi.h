@@ -137,6 +137,9 @@ public:
     // Creates a new instance and initializes a new curl multi instance.
     Handle();
 
+    // Queries statistics about the timing information of the last transfers.
+    core::net::http::Client::Timings timings();
+
     // Executes the underlying dispatcher executing the curl multi instance.
     // Can be called multiple times for thread-pool use-cases.
     void run();
