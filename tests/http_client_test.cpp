@@ -23,6 +23,8 @@
 #include <core/net/http/request.h>
 #include <core/net/http/response.h>
 
+#include "httpbin.h"
+
 #include <gtest/gtest.h>
 
 #include <json/json.h>
@@ -46,72 +48,6 @@ auto default_progress_reporter = [](const http::Request::Progress& progress)
 };
 }
 
-/**
- *
- * Testing an HTTP Library can become difficult sometimes. Postbin is fantastic
- * for testing POST requests, but not much else. This exists to cover all kinds
- * of HTTP scenarios. Additional endpoints are being considered (e.g.
- * /deflate).
- *
- * All endpoint responses are JSON-encoded.
- *
- */
-namespace httpbin
-{
-const char* host()
-{
-    return "http://httpbin.org";
-}
-namespace resources
-{
-/** A non-existing resource */
-const char* does_not_exist()
-{
-    return "/does_not_exist";
-}
-/** Returns Origin IP. */
-const char* ip()
-{
-    return "/ip";
-}
-/** Returns user-agent. */
-const char* user_agent()
-{
-    return "/user-agent";
-}
-/** Returns header dict. */
-const char* headers()
-{
-    return "/headers";
-}
-/** Returns GET data. */
-const char* get()
-{
-    return "/get";
-}
-/** Returns POST data. */
-const char* post()
-{
-    return "/post";
-}
-/** Returns PUT data. */
-const char* put()
-{
-    return "/put";
-}
-/** Challenges basic authentication. */
-const char* basic_auth()
-{
-    return "/basic-auth/user/passwd";
-}
-/** Challenges digest authentication. */
-const char* digest_auth()
-{
-    return "/digest-auth/auth/user/passwd";
-}
-}
-}
-
 TEST(HttpClient, head_request_for_existing_resource_succeeds)
 {
     // We obtain a default client instance, dispatching to the default implementation.
@@ -128,6 +64,22 @@ TEST(HttpClient, head_request_for_existing_resource_succeeds)
 
     // We expect the query to complete successfully
     EXPECT_EQ(core::net::http::Status::ok, response.status);
+}
+
+TEST(HttpClient, a_request_can_timeout)
+{
+    // We obtain a default client instance, dispatching to the default implementation.
+    auto client = http::make_client();
+
+    // Url pointing to the resource we would like to access via http.
+    auto url = std::string(httpbin::host()) + httpbin::resources::get();
+
+    // The client mostly acts as a factory for http requests.
+    auto request = client->head(http::Request::Configuration::from_uri_as_string(url));
+    request->set_timeout(std::chrono::milliseconds{5});
+
+    // We finally execute the query synchronously and story the response.
+    EXPECT_THROW(auto response = request->execute(default_progress_reporter), core::net::Error);
 }
 
 TEST(HttpClient, get_request_for_existing_resource_succeeds)
@@ -534,150 +486,3 @@ TEST(HttpClient, submit_of_location_on_mozillas_location_service_succeeds)
               response.status);
 }
 
-/***********************************************************
- *
- *
- * All load tests go here.
- *
- *
-***********************************************************/
-
-namespace
-{
-template<int field_width, char separator>
-struct Row
-{
-    template<int field_count>
-    struct HorizontalSeparator
-    {
-        static constexpr int width = field_count*(2 + field_width + 1) + 1;
-    };
-
-    template<int field_count>
-    friend std::ostream& operator<<(
-        std::ostream& out,
-        const HorizontalSeparator<field_count>&)
-    {
-        out << std::setw(HorizontalSeparator<field_count>::width) << std::setfill('-') << '-' << std::setfill(' ') << std::endl;
-        return out;
-    }
-
-    mutable std::stringstream ss;
-};
-
-template<int field_width, char separator, typename T>
-Row<field_width, separator>& operator<<(Row<field_width, separator>& row, const T& value)
-{
-    static const std::string prefix = std::string{separator} + " ";
-    row.ss << prefix << std::setw(field_width) << value << " ";
-    return row;
-}
-
-template<int field_width, char separator, typename T>
-Row<field_width, separator>& operator<<(Row<field_width, separator>& row, T& value)
-{
-    static const std::string prefix = std::string{separator} + " ";
-    row.ss << prefix << std::setw(field_width) << value << " ";
-    return row;
-}
-
-template<int field_width, char separator>
-std::ostream& operator<<(std::ostream& out, const Row<field_width, separator>& row)
-{
-    out << row.ss.str() << separator << std::endl;
-    row.ss.str(std::string{});
-
-    return out;
-}
-
-struct HttpClientLoadTest : public ::testing::Test
-{
-    typedef std::function<std::shared_ptr<http::Request>(const std::shared_ptr<http::Client>&)> RequestFactory;
-
-    void run(const RequestFactory& request_factory)
-    {
-        // We obtain a default client instance, dispatching to the default implementation.
-        auto client = http::make_client();
-
-        // Execute the client
-        std::thread worker{[client]() { client->run(); }};
-
-        // Url pointing to the resource we would like to access via http.
-        auto url = std::string(httpbin::host()) + httpbin::resources::get();
-
-        std::size_t completed{1};
-        std::size_t total{40};
-
-        auto on_completed = [&completed, total, client]()
-                {
-                    if (++completed == total)
-                    {
-                        auto timings = client->timings();
-
-                        Row<15, '|'> row;
-                        Row<15, '|'>::HorizontalSeparator<5> sep;
-
-                        std::cout << sep;
-                        std::cout << (row << "Indicator" << "Min" << "Max" << "Mean" << "Std. Dev.");
-                        std::cout << sep;
-                        std::cout << (row << "NameLookup" << timings.name_look_up.min.count() << timings.name_look_up.max.count() << timings.name_look_up.mean.count() << std::sqrt(timings.name_look_up.variance.count()));
-                        std::cout << (row << "Connect" << timings.connect.min.count() << timings.connect.max.count() << timings.connect.mean.count() << std::sqrt(timings.connect.variance.count()));
-                        std::cout << (row << "AppConnect" << timings.app_connect.min.count() << timings.app_connect.max.count() << timings.app_connect.mean.count() << std::sqrt(timings.app_connect.variance.count()));
-                        std::cout << (row << "PreTransfer" << timings.pre_transfer.min.count() << timings.pre_transfer.max.count() << timings.pre_transfer.mean.count() << std::sqrt(timings.pre_transfer.variance.count()));
-                        std::cout << (row << "StartTransfer" << timings.start_transfer.min.count() << timings.start_transfer.max.count() << timings.start_transfer.mean.count() << std::sqrt(timings.start_transfer.variance.count()));
-                        std::cout << (row << "Total" << timings.total.min.count() << timings.total.max.count() << timings.total.mean.count() << std::sqrt(timings.total.variance.count()));
-                        std::cout << sep;
-                        client->stop();
-                    }
-                };
-
-        for (unsigned int i = 0; i < total; i++)
-        {
-            // The client mostly acts as a factory for http requests.
-            auto request = request_factory(client);
-
-            // We finally execute the query asynchronously.
-            request->async_execute(
-                http::Request::ProgressHandler{},
-                [request, on_completed](const core::net::http::Response&) mutable
-                {
-                    on_completed();
-                },
-                [request, on_completed](const core::net::Error&) mutable
-                {
-                    on_completed();
-                });
-        }
-
-        // We shut down our worker threads
-        if (worker.joinable())
-            worker.join();
-    }
-};
-
-}
-
-TEST_F(HttpClientLoadTest, async_get_request_for_existing_resource_succeeds)
-{
-    auto url = std::string(httpbin::host()) + httpbin::resources::get();
-
-    run([url](const std::shared_ptr<http::Client>& client)
-        {
-            return client->get(
-                http::Request::Configuration::from_uri_as_string(url));
-        });
-}
-
-TEST_F(HttpClientLoadTest, async_post_request_for_existing_resource_succeeds)
-{
-    auto url = std::string(httpbin::host()) + httpbin::resources::post();
-    static const std::string payload = "{ 'test': 'test' }";
-
-    run([url](const std::shared_ptr<http::Client>& client)
-        {
-            return client->post(
-                http::Request::Configuration::from_uri_as_string(url),
-                payload,
-                core::net::http::ContentType::json);
-        });
-}

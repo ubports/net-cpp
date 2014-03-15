@@ -95,6 +95,10 @@ public:
     Client& operator=(const Client&) = delete;
     bool operator==(const Client&) const = delete;
 
+    /** @brief Percent-encodes the given string. */
+    virtual std::string url_escape(const std::string& s) const = 0;
+
+    /** @brief Queries timing statistics over all requests that have been executed by this client. */
     virtual Timings timings() = 0;
 
     /** @brief Execute the client and any impl-specific thread-pool or runtime. */

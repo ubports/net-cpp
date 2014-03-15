@@ -30,6 +30,11 @@ http::impl::curl::Client::Client()
     multi.set_option(::curl::multi::Option::pipelining, ::curl::easy::enable);
 }
 
+std::string http::impl::curl::Client::url_escape(const std::string& s) const
+{
+    return ::curl::native::escape(s);
+}
+
 core::net::http::Client::Timings http::impl::curl::Client::timings()
 {
     return multi.timings();

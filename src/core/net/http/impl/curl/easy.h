@@ -32,8 +32,6 @@
 
 namespace curl
 {
-typedef std::chrono::duration<double> Seconds;
-
 enum class Code
 {
     ok = CURLE_OK,
@@ -128,8 +126,19 @@ enum class Option
     username = CURLOPT_USERNAME,
     password = CURLOPT_PASSWORD,
     no_signal = CURLOPT_NOSIGNAL,
-    verbose = CURLOPT_VERBOSE
+    verbose = CURLOPT_VERBOSE,
+    timeout_ms = CURLOPT_TIMEOUT_MS
 };
+
+namespace native
+{
+// Global setup of curl.
+Code init();
+// Cleanup all native curl resources.
+void cleanup();
+// URL escapes the given input string.
+std::string escape(const std::string& in);
+}
 
 namespace easy
 {
@@ -169,8 +178,20 @@ namespace native
 // An opaque handle to a curl multi instance.
 typedef CURL* Handle;
 
+// Creates and initializes a new native easy instance.
+Handle init();
+
+// Releases and cleans up the resources of a native easy instance.
+void cleanup(Handle handle);
+
 // Executes the operation configured on the handle.
-void perform(Handle handle);
+::curl::Code perform(Handle handle);
+
+// URL escapes the given input string.
+std::string escape(Handle handle, const std::string& in);
+
+// URL unescapes the given input string.
+std::string unescape(Handle handle, const std::string& in);
 
 // Sets an option on a native curl multi instance.
 template<typename T>
@@ -190,6 +211,11 @@ inline Code get(Handle handle, Info info, T value)
 class Handle
 {
 public:
+    struct HandleHasBeenAbandoned : public std::runtime_error
+    {
+        HandleHasBeenAbandoned();
+    };
+
     struct Timings
     {
         typedef std::chrono::duration<double> Seconds;
@@ -222,8 +248,10 @@ public:
     // Creates a new handle and initializes the underlying curl easy instance.
     Handle();
 
-    // Resets the handle, and all its callbacks.
-    void reset();
+    // Releases the handle and all underlying state.
+    // Subsequent accesses to this instance will throw a
+    // HandleHasBeenAbandoned exception.
+    void release();
 
     // Queries the timing information of the last execution from the native curl handle.
     Timings timings();
@@ -253,7 +281,6 @@ public:
     // Sets the OnProgress handler.
     Handle& on_progress(const OnProgress& on_progress);
     // Sets the OnReadData handler.
-    Handle& on_read_data(const OnProgress& on_progress);
     Handle& on_read_data(const OnReadData& on_read_data, std::size_t size);
     // Sets the OnWriteData handler.
     Handle& on_write_data(const OnWriteData& on_new_data);
@@ -271,6 +298,12 @@ public:
 
     // Executes the operation associated with this handle.
     void perform();
+
+    // URL escapes the given input string.
+    std::string escape(const std::string& in);
+
+    // URL unescapes the given input string.
+    std::string unescape(const std::string& in);
 
     // Notifies this instance that the operation finished with 'code'.
     void notify_finished(curl::Code code);

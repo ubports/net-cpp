@@ -37,12 +37,12 @@ struct Init
 {
     Init()
     {
-        curl_global_init(CURL_GLOBAL_DEFAULT);
+        curl::easy::throw_if_not<curl::Code::ok>(curl::native::init());
     }
 
     ~Init()
     {
-        curl_global_cleanup();
+        curl::native::cleanup();
     }
 } init;
 }
@@ -52,16 +52,77 @@ std::ostream& curl::operator<<(std::ostream& out, curl::Code code)
     return out << curl_easy_strerror(static_cast<CURLcode>(code));
 }
 
-void curl::easy::native::perform(curl::easy::native::Handle handle)
+std::string curl::native::escape(const std::string& in)
 {
-    curl::easy::throw_if_not<curl::Code::ok>(
-                static_cast<curl::Code>(
-                    curl_easy_perform(handle)));
+    auto escaped = curl_escape(in.c_str(), in.size());
+
+    std::string result{(escaped ? escaped : "")};
+
+    if (escaped)
+        curl_free(escaped);
+
+    return result;
+}
+
+::curl::Code curl::native::init()
+{
+    return static_cast<::curl::Code>(curl_global_init(CURL_GLOBAL_DEFAULT));
+}
+
+void curl::native::cleanup()
+{
+    curl_global_cleanup();
+}
+
+easy::native::Handle easy::native::init()
+{
+    return curl_easy_init();
+}
+
+void easy::native::cleanup(easy::native::Handle handle)
+{
+    curl_easy_cleanup(handle);
+}
+
+::curl::Code easy::native::perform(easy::native::Handle handle)
+{
+    return static_cast<curl::Code>(curl_easy_perform(handle));
+}
+
+std::string easy::native::escape(easy::native::Handle handle, const std::string& in)
+{
+    auto escaped = curl_easy_escape(handle, in.c_str(), in.size());
+
+    std::string result{(escaped ? escaped : "")};
+
+    if (escaped)
+        curl_free(escaped);
+
+    return result;
+}
+
+// URL unescapes the given input string.
+std::string easy::native::unescape(easy::native::Handle handle, const std::string& in)
+{
+    int out_length{0};
+    auto escaped = curl_easy_unescape(handle, in.c_str(), in.size(), &out_length);
+
+    std::string result;
+    if (escaped)
+    {
+        result = std::string{escaped, static_cast<std::size_t>(out_length)};
+        curl_free(escaped);
+    }
+
+    return result;
 }
 
 struct easy::Handle::Private
 {
-    Private() : handle(curl_easy_init(), [](CURL* ptr) { curl_easy_cleanup(ptr); })
+    Private()
+        : handle(
+              easy::native::init(),
+              [](easy::native::Handle handle) { easy::native::cleanup(handle); })
     {
     }
 
@@ -132,53 +193,74 @@ std::size_t easy::Handle::read_data_cb(void* data, std::size_t size, std::size_t
     return did_not_consume_any_data;
 }
 
+easy::Handle::HandleHasBeenAbandoned::HandleHasBeenAbandoned()
+    : std::runtime_error("Handle has been abandoned.")
+{
+}
+
 easy::Handle::Handle() : d(new Private())
 {
     set_option(Option::http_auth, CURLAUTH_ANY);
     set_option(Option::sharing, d->shared.native());
-    set_option(Option::no_signal, easy::enable);
+    //set_option(Option::no_signal, easy::enable);
 }
 
-void easy::Handle::reset()
+void easy::Handle::release()
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     d.reset();
 }
 
 easy::Handle::Timings easy::Handle::timings()
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     easy::Handle::Timings result;
     double value;
 
     get_option(::curl::Info::namelookup_time, &value);
     result.name_look_up = easy::Handle::Timings::Seconds{value};
+
     get_option(::curl::Info::connect_time, &value);
-    result.connect = easy::Handle::Timings::Seconds{value};
-    get_option(::curl::Info::appconnect_time, &value);
-    result.app_connect = easy::Handle::Timings::Seconds{value};
+    result.connect = easy::Handle::Timings::Seconds{value} - result.name_look_up;
+
     get_option(::curl::Info::pretransfer_time, &value);
-    result.pre_transfer = easy::Handle::Timings::Seconds{value};
+    result.pre_transfer = 
+            easy::Handle::Timings::Seconds{value} - (result.connect + result.name_look_up);
     get_option(::curl::Info::starttransfer_time, &value);
-    result.start_transfer = easy::Handle::Timings::Seconds{value};
+    result.start_transfer = 
+            easy::Handle::Timings::Seconds{value} - (result.pre_transfer + result.connect + result.name_look_up);
+
     get_option(::curl::Info::total_time, &value);
     result.total = easy::Handle::Timings::Seconds{value};
+
+    get_option(::curl::Info::appconnect_time, &value);
+    result.app_connect = easy::Handle::Timings::Seconds{value};
 
     return result;
 }
 
 easy::Handle& easy::Handle::url(const char* url)
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     set_option(Option::url, url);
     return *this;
 }
 
 easy::Handle& easy::Handle::user_agent(const char* user_agent)
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     set_option(Option::user_agent, user_agent);
     return *this;
 }
 
 easy::Handle& easy::Handle::http_credentials(const std::string& username, const std::string& pwd)
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     set_option(Option::username, username.c_str());
     set_option(Option::password, pwd.c_str());
     return *this;
@@ -186,12 +268,16 @@ easy::Handle& easy::Handle::http_credentials(const std::string& username, const 
 
 easy::Handle& easy::Handle::on_finished(const easy::Handle::OnFinished& on_finished)
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     d->on_finished_cb = on_finished;
     return *this;
 }
 
 easy::Handle& easy::Handle::on_progress(const easy::Handle::OnProgress& on_progress)
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     set_option(Option::no_progress, curl::easy::disable);
     set_option(Option::progress_function, Handle::progress_cb);
     set_option(Option::progress_data, d.get());
@@ -203,6 +289,8 @@ easy::Handle& easy::Handle::on_progress(const easy::Handle::OnProgress& on_progr
 
 easy::Handle& easy::Handle::on_read_data(const easy::Handle::OnReadData& on_read_data, std::size_t size)
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     set_option(Option::read_function, Handle::read_data_cb);
     set_option(Option::read_data, d.get());
     set_option(Option::in_file_size, size);
@@ -214,6 +302,8 @@ easy::Handle& easy::Handle::on_read_data(const easy::Handle::OnReadData& on_read
 
 easy::Handle& easy::Handle::on_write_data(const easy::Handle::OnWriteData& on_new_data)
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     set_option(Option::write_function, Handle::write_data_cb);
     set_option(Option::write_data, d.get());
 
@@ -224,6 +314,8 @@ easy::Handle& easy::Handle::on_write_data(const easy::Handle::OnWriteData& on_ne
 
 easy::Handle& easy::Handle::on_write_header(const easy::Handle::OnWriteHeader& on_new_header)
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     set_option(Option::header_function, Handle::write_header_cb);
     set_option(Option::header_data, d.get());
 
@@ -234,6 +326,8 @@ easy::Handle& easy::Handle::on_write_header(const easy::Handle::OnWriteHeader& o
 
 easy::Handle& easy::Handle::method(core::net::http::Method method)
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     switch(method)
     {
     case core::net::http::Method::get:
@@ -258,6 +352,8 @@ easy::Handle& easy::Handle::method(core::net::http::Method method)
 
 easy::Handle& easy::Handle::post_data(const std::string& data, const std::string&)
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     long content_length = data.size();
     set_option(Option::post_field_size, content_length);
     set_option(Option::copy_postfields, data.c_str());
@@ -267,6 +363,8 @@ easy::Handle& easy::Handle::post_data(const std::string& data, const std::string
 
 core::net::http::Status easy::Handle::status()
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     long result;
     get_option(curl::Info::response_code, &result);
     return static_cast<core::net::http::Status>(result);
@@ -274,16 +372,35 @@ core::net::http::Status easy::Handle::status()
 
 easy::native::Handle easy::Handle::native() const
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     return d->handle.get();
 }
 
 void easy::Handle::perform()
 {
-    easy::native::perform(d->handle.get());
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+    throw_if_not<curl::Code::ok>(easy::native::perform(native()));
+}
+
+// URL escapes the given input string.
+std::string easy::Handle::escape(const std::string& in)
+{
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+    return easy::native::escape(native(), in);
+}
+
+// URL unescapes the given input string.
+std::string easy::Handle::unescape(const std::string& in)
+{
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+    return easy::native::unescape(native(), in);
 }
 
 void easy::Handle::notify_finished(curl::Code code)
 {
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
     if (d->on_finished_cb)
         d->on_finished_cb(code);
 }

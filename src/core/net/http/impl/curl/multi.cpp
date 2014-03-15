@@ -262,6 +262,8 @@ multi::Handle::Handle() : d(new Private())
     set_option(Option::socket_data, holder);
     set_option(Option::timer_function, Private::timer_callback);
     set_option(Option::timer_data, holder);
+
+    set_option(Option::pipelining, easy::enable);
 }
 
 core::net::http::Client::Timings multi::Handle::timings()

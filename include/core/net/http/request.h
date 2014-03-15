@@ -24,6 +24,7 @@
 
 #include <core/net/http/error.h>
 
+#include <chrono>
 #include <memory>
 
 namespace core
@@ -171,6 +172,12 @@ public:
     virtual State state() = 0;
 
     /**
+     * @brief Adjusts the timeout of a State::ready request.
+     * @param timeout The timeout in milliseconds.
+     */
+    virtual void set_timeout(const std::chrono::milliseconds& timeout) = 0;
+
+    /**
      * @brief Synchronously executes the request.
      * @throw core::net::http::Error in case of http-related errors.
      * @throw core::net::Error in case of network-related errors.
@@ -189,6 +196,18 @@ public:
             const ProgressHandler& ph,
             const ResponseHandler& rh,
             const ErrorHandler& eh) = 0;
+
+    /**
+     * @brief Returns the input string in URL-escaped format.
+     * @param s The string to be URL escaped.
+     */
+    virtual std::string url_escape(const std::string& s) = 0;
+
+    /**
+     * @brief Returns the input string in URL-unescaped format.
+     * @param s The string to be URL unescaped.
+     */
+    virtual std::string url_unescape(const std::string& s) = 0;
 
 protected:
     Request() = default;

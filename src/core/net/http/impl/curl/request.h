@@ -55,7 +55,7 @@ struct StateGuard
     ~StateGuard()
     {
         state.store(core::net::http::Request::State::done);
-        easy.reset();
+        easy.release();
     }
 
     ::curl::easy::Handle easy;
@@ -76,6 +76,14 @@ public:
     State state()
     {
         return atomic_state.load();
+    }
+
+    void set_timeout(const std::chrono::milliseconds& timeout)
+    {
+        if (atomic_state.load() != core::net::http::Request::State::ready)
+            throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
+
+        easy.set_option(::curl::Option::timeout_ms, timeout.count());
     }
 
     Response execute(const Request::ProgressHandler& ph)
@@ -169,8 +177,6 @@ public:
                 std::stringstream ss; ss << code;
                 eh(core::net::http::Error(ss.str(), CORE_FROM_HERE()));
             }
-
-            easy.reset();
         });
 
         if (ph)
@@ -222,6 +228,15 @@ public:
         multi.add(easy);
     }
 
+    std::string url_escape(const std::string& s)
+    {
+        return easy.escape(s);
+    }
+
+    std::string url_unescape(const std::string& s)
+    {
+        return easy.unescape(s);
+    }
 private:
     std::atomic<core::net::http::Request::State> atomic_state;
     ::curl::multi::Handle multi;

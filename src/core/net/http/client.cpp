@@ -41,7 +41,7 @@ std::shared_ptr<http::Request> http::Client::post_form(
 
     for (const auto& pair : values)
     {
-        ss << (first ? "" : "&") << pair.first << "=" << pair.second;
+        ss << (first ? "" : "&") << url_escape(pair.first) << "=" << url_escape(pair.second);
         first = false;
     }
 
