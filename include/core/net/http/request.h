@@ -67,54 +67,8 @@ public:
              * @brief AlreadyActive creates a new instance with a location hint.
              * @param loc The location that the call originates from.
              */
-            inline AlreadyActive(const core::Location& loc)
-                : core::net::http::Error("Request is already active.", loc)
-            {
-            }
+            AlreadyActive(const core::Location& loc);
         };
-    };
-
-    /**
-     * @brief The Credentials struct encapsulates username and password for basic & digest authentication.
-     */
-    struct Credentials
-    {
-        std::string username;
-        std::string password;
-    };
-
-    /** Function signature for querying credentials for a given URL. */
-    typedef std::function<Credentials(const std::string&)> AuthenicationHandler;
-
-    /**
-     * @brief The Configuration struct encapsulates all options for creating requests.
-     */
-    struct Configuration
-    {
-        /**
-         * @brief from_uri_as_string creates a new instance of Configuration for a url.
-         * @param uri The url of the web resource to issue a request for.
-         * @return A new Configuration instance.
-         */
-        inline static Configuration from_uri_as_string(const std::string& uri)
-        {
-            Configuration result;
-            result.uri = uri;
-
-            return result;
-        }
-
-        /** Uri of the web resource to issue a request for. */
-        std::string uri;
-
-        /** Encapsulates proxy and http authentication handlers. */
-        struct
-        {
-            /** Invoked for querying user credentials to do basic/digest auth. */
-            AuthenicationHandler for_http;
-            /** Invoked for querying user credentials to authenticate proxy accesses. */
-            AuthenicationHandler for_proxy;
-        } authentication_handler;
     };
 
     /**
@@ -159,6 +113,89 @@ public:
      */
     typedef std::function<void(const Response&)> ResponseHandler;
 
+    /**
+     * @brief Encapsulates callbacks that can happen during request execution.
+     */
+    class Handler
+    {
+    public:
+        Handler() = default;
+
+        /** @brief Returns the currently set progress handler. */
+        const ProgressHandler& on_progress() const;
+        /** @brief Adjusts the currently set progress handler. */
+        Handler& on_progress(const ProgressHandler& handler);
+
+        /** @brief Returns the currently set response handler. */
+        const ResponseHandler& on_response() const;
+        /** @brief Adjusts the currently set response handler. */
+        Handler& on_response(const ResponseHandler& handler);
+
+        /** @brief Returns the currently set error handler. */
+        const ErrorHandler& on_error() const;
+        /** @brief Adjusts the currently set error handler. */
+        Handler& on_error(const ErrorHandler& handler);
+
+    private:
+        /** @cond */
+        ProgressHandler progress_handler{};
+        ResponseHandler response_handler{};
+        ErrorHandler error_handler{};
+        /** @endcond */
+    };
+
+    /**
+     * @brief The Credentials struct encapsulates username and password for basic & digest authentication.
+     */
+    struct Credentials
+    {
+        std::string username;
+        std::string password;
+    };
+
+    /** Function signature for querying credentials for a given URL. */
+    typedef std::function<Credentials(const std::string&)> AuthenicationHandler;
+
+    /**
+     * @brief The Configuration struct encapsulates all options for creating requests.
+     */
+    struct Configuration
+    {
+        /**
+         * @brief from_uri_as_string creates a new instance of Configuration for a url.
+         * @param uri The url of the web resource to issue a request for.
+         * @return A new Configuration instance.
+         */
+        inline static Configuration from_uri_as_string(const std::string& uri)
+        {
+            Configuration result;
+            result.uri = uri;
+
+            return result;
+        }
+
+        /** Uri of the web resource to issue a request for. */
+        std::string uri;
+
+        /** Invoked to report progress. */
+        ProgressHandler on_progress;
+
+        /** Invoked to report a successfully finished request. */
+        ResponseHandler on_response;
+
+        /** Invoked to report a request that finished with an error. */
+        ErrorHandler on_error;
+
+        /** Encapsulates proxy and http authentication handlers. */
+        struct
+        {
+            /** Invoked for querying user credentials to do basic/digest auth. */
+            AuthenicationHandler for_http;
+            /** Invoked for querying user credentials to authenticate proxy accesses. */
+            AuthenicationHandler for_proxy;
+        } authentication_handler;
+    };
+
     Request(const Request&) = delete;
     virtual ~Request() = default;
 
@@ -187,15 +224,10 @@ public:
 
     /**
      * @brief Asynchronously executes the request, reporting errors, progress and completion to the given handlers.
-     * @param ph Function to call for reporting the progress of the operation.
-     * @param rh Function to call for reporting completion of the operation.
-     * @param eh Function to call for reporting errors during the operation.
+     * @param handler The handlers to called for events happening during execution of the request.
      * @return The response to the request.
      */
-    virtual void async_execute(
-            const ProgressHandler& ph,
-            const ResponseHandler& rh,
-            const ErrorHandler& eh) = 0;
+    virtual void async_execute(const Handler& handler) = 0;
 
     /**
      * @brief Returns the input string in URL-escaped format.
@@ -210,7 +242,9 @@ public:
     virtual std::string url_unescape(const std::string& s) = 0;
 
 protected:
+    /** @cond */
     Request() = default;
+    /** @endcond */
 };
 }
 }

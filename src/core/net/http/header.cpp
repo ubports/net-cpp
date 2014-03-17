@@ -24,7 +24,7 @@ namespace http = core::net::http;
 
 bool http::Header::has(const std::string& key, const std::string& value) const
 {
-    auto it = fields.find(key);
+    auto it = fields.find(canonicalize_key(key));
 
     if (it == fields.end())
         return false;
@@ -34,22 +34,22 @@ bool http::Header::has(const std::string& key, const std::string& value) const
 
 bool http::Header::has(const std::string& key) const
 {
-    return fields.count(key) > 0;
+    return fields.count(canonicalize_key(key)) > 0;
 }
 
 void http::Header::add(const std::string& key, const std::string& value)
 {
-    fields[key].insert(value);
+    fields[canonicalize_key(key)].insert(value);
 }
 
 void http::Header::remove(const std::string& key)
 {
-    fields.erase(key);
+    fields.erase(canonicalize_key(key));
 }
 
 void http::Header::remove(const std::string& key, const std::string& value)
 {
-    auto it = fields.find(key);
+    auto it = fields.find(canonicalize_key(key));
 
     if (it != fields.end())
     {
@@ -59,32 +59,19 @@ void http::Header::remove(const std::string& key, const std::string& value)
 
 void http::Header::set(const std::string& key, const std::string& value)
 {
-    fields[key] = std::set<std::string>{value};
+    fields[canonicalize_key(key)] = std::set<std::string>{value};
 }
 
 std::string http::Header::canonicalize_key(const std::string& key)
 {
     std::string result{key};
 
-    auto it = result.begin();
-    auto itE = result.end();
+    bool should_be_capitalized{true};
 
-    bool next_should_be_capitalized{false};
-
-    for (; it != itE; ++it)
+    for (auto it = result.begin(), itE = result.end(); it != itE; ++it)
     {
-        if (it == result.begin() or next_should_be_capitalized)
-            *it = std::toupper(*it);
-        else if (*it == '-')
-        {
-            next_should_be_capitalized = true;
-            continue;
-        } else
-        {
-            *it = std::tolower(*it);
-        }
-
-        next_should_be_capitalized = false;
+        *it = should_be_capitalized ? std::toupper(*it) : std::tolower(*it);
+        should_be_capitalized = *it == '-';
     }
 
     return result;

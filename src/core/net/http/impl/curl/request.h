@@ -153,10 +153,7 @@ public:
         return context.result;
     }
 
-    void async_execute(
-            const Request::ProgressHandler& ph,
-            const Request::ResponseHandler& rh,
-            const Request::ErrorHandler& eh)
+    void async_execute(const Request::Handler& handler)
     {
         if (atomic_state.load() != core::net::http::Request::State::ready)
             throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
@@ -171,15 +168,19 @@ public:
                 context->result.status = easy.status();
                 context->result.body = context->body.str();
 
-                rh(context->result);
+                if (handler.on_response())
+                    handler.on_response()(context->result);
             } else
             {
-                std::stringstream ss; ss << code;
-                eh(core::net::http::Error(ss.str(), CORE_FROM_HERE()));
+                if (handler.on_error())
+                {
+                    std::stringstream ss; ss << code;
+                    handler.on_error()(core::net::http::Error(ss.str(), CORE_FROM_HERE()));
+                }
             }
         });
 
-        if (ph)
+        if (handler.on_progress())
         {
             easy.on_progress([=](void*, double dltotal, double dlnow, double ultotal, double ulnow)
             {
@@ -191,7 +192,7 @@ public:
 
                 int result{-1};
 
-                switch(ph(progress))
+                switch(handler.on_progress()(progress))
                 {
                 case Request::Progress::Next::abort_operation: result = 1; break;
                 case Request::Progress::Next::continue_operation: result = 0; break;

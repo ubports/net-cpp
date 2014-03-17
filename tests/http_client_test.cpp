@@ -194,15 +194,16 @@ TEST(HttpClient, async_get_request_for_existing_resource_succeeds)
 
     // We finally execute the query asynchronously.
     request->async_execute(
-                default_progress_reporter,
-                [&](const core::net::http::Response& response)
-    {
-        promise.set_value(response);
-    },
-    [&](const core::net::Error& e)
-    {
-        promise.set_exception(std::make_exception_ptr(e));
-    });
+                http::Request::Handler()
+                    .on_progress(default_progress_reporter)
+                    .on_response([&](const core::net::http::Response& response)
+                    {
+                        promise.set_value(response);
+                    })
+                    .on_error([&](const core::net::Error& e)
+                    {
+                        promise.set_exception(std::make_exception_ptr(e));
+                    }));
 
     auto response = future.get();
 
@@ -256,17 +257,18 @@ TEST(HttpClient, async_get_request_for_existing_resource_guarded_by_basic_authen
 
     // We finally execute the query asynchronously.
     request->async_execute(
-                default_progress_reporter,
-                [&](const core::net::http::Response& response)
-                {
-                    promise.set_value(response);
-                    client->stop();
-                },
-                [&](const core::net::Error& e)
-                {
-                    promise.set_exception(std::make_exception_ptr(e));
-                    client->stop();
-                });
+                http::Request::Handler()
+                    .on_progress(default_progress_reporter)
+                    .on_response([&](const core::net::http::Response& response)
+                    {
+                        promise.set_value(response);
+                        client->stop();
+                    })
+                    .on_error([&](const core::net::Error& e)
+                    {
+                        promise.set_exception(std::make_exception_ptr(e));
+                        client->stop();
+                    }));
 
     // And wait here for the response to arrive.
     auto response = future.get();

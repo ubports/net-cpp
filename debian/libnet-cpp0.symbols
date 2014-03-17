@@ -1,0 +1,48 @@
+libnet-cpp.so.0 libnet-cpp0 #MINVER#
+ (c++)"core::net::Uri::from_string(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::net::Uri::Hierarchical::~Hierarchical()@Base" 0replaceme
+ (c++)"core::net::Uri::Errors::MalformedUri::~MalformedUri()@Base" 0replaceme
+ (c++)"core::net::Uri::Authority::Authority(core::net::Uri::Authority const&)@Base" 0replaceme
+ (c++)"core::net::Uri::Authority::~Authority()@Base" 0replaceme
+ (c++)"core::net::Uri::Authority::operator=(core::net::Uri::Authority const&)@Base" 0replaceme
+ (c++)"core::net::Uri::~Uri()@Base" 0replaceme
+ (c++)"core::net::http::make_client()@Base" 0replaceme
+ (c++)"core::net::http::Client::Errors::HttpMethodNotSupported::HttpMethodNotSupported(core::net::http::Method, core::Location const&)@Base" 0replaceme
+ (c++)"core::net::http::Client::Errors::HttpMethodNotSupported::~HttpMethodNotSupported()@Base" 0replaceme
+ (c++)"core::net::http::Client::post_form(core::net::http::Request::Configuration const&, std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::basic_string<char, std::char_traits<char>, std::allocator<char> > const, std::basic_string<char, std::char_traits<char>, std::allocator<char> > > > > const&)@Base" 0replaceme
+ (c++)"core::net::http::Header::canonicalize_key(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::net::http::Header::add(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::net::http::Header::set(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::net::http::Header::remove(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::net::http::Header::remove(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::net::http::Request::Credentials::~Credentials()@Base" 0replaceme
+ (c++)"core::net::http::Request::Errors::AlreadyActive::AlreadyActive(core::Location const&)@Base" 0replaceme
+ (c++)"core::net::http::Request::Errors::AlreadyActive::~AlreadyActive()@Base" 0replaceme
+ (c++)"core::net::http::Request::Handler::on_progress(std::function<core::net::http::Request::Progress::Next (core::net::http::Request::Progress const&)> const&)@Base" 0replaceme
+ (c++)"core::net::http::Request::Handler::on_response(std::function<void (core::net::http::Response const&)> const&)@Base" 0replaceme
+ (c++)"core::net::http::Request::Handler::on_error(std::function<void (core::net::Error const&)> const&)@Base" 0replaceme
+ (c++)"core::net::http::Response::~Response()@Base" 0replaceme
+ (c++)"core::net::http::operator<<(std::basic_ostream<char, std::char_traits<char> >&, core::net::http::Status)@Base" 0replaceme
+ (c++)"core::net::http::Header::has(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const@Base" 0replaceme
+ (c++)"core::net::http::Header::has(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const@Base" 0replaceme
+ (c++)"core::net::http::Request::Handler::on_progress() const@Base" 0replaceme
+ (c++)"core::net::http::Request::Handler::on_response() const@Base" 0replaceme
+ (c++)"core::net::http::Request::Handler::on_error() const@Base" 0replaceme
+ (c++)"typeinfo for core::net::Uri::Errors::MalformedUri@Base" 0replaceme
+ (c++)"typeinfo for core::net::http::Client::Errors::HttpMethodNotSupported@Base" 0replaceme
+ (c++)"typeinfo for core::net::http::Client@Base" 0replaceme
+ (c++)"typeinfo for core::net::http::Header@Base" 0replaceme
+ (c++)"typeinfo for core::net::http::Request::Errors::AlreadyActive@Base" 0replaceme
+ (c++)"typeinfo for core::net::http::Request@Base" 0replaceme
+ (c++)"typeinfo name for core::net::Uri::Errors::MalformedUri@Base" 0replaceme
+ (c++)"typeinfo name for core::net::http::Client::Errors::HttpMethodNotSupported@Base" 0replaceme
+ (c++)"typeinfo name for core::net::http::Client@Base" 0replaceme
+ (c++)"typeinfo name for core::net::http::Header@Base" 0replaceme
+ (c++)"typeinfo name for core::net::http::Request::Errors::AlreadyActive@Base" 0replaceme
+ (c++)"typeinfo name for core::net::http::Request@Base" 0replaceme
+ (c++)"vtable for core::net::Uri::Errors::MalformedUri@Base" 0replaceme
+ (c++)"vtable for core::net::http::Client::Errors::HttpMethodNotSupported@Base" 0replaceme
+ (c++)"vtable for core::net::http::Client@Base" 0replaceme
+ (c++)"vtable for core::net::http::Header@Base" 0replaceme
+ (c++)"vtable for core::net::http::Request::Errors::AlreadyActive@Base" 0replaceme
+ (c++)"vtable for core::net::http::Request@Base" 0replaceme

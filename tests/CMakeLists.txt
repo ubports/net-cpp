@@ -19,15 +19,16 @@ find_package(Threads)
 
 pkg_check_modules(JSON_CPP jsoncpp)
 
-set (OLD_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-# Don't treat warnings as errors in 3rd_party/{gmock,cucumber-cpp}
-string (REPLACE " -Werror " " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-find_package(Gtest REQUIRED)
-include_directories(${GMOCK_INCLUDE_DIR} ${GTEST_INCLUDE_DIR})
-set (CMAKE_CXX_FLAGS ${OLD_CMAKE_CXX_FLAGS})
+# Build with system gmock and embedded gtest
+set (GMOCK_INCLUDE_DIR "/usr/include/gmock/include" CACHE PATH "gmock source include directory")
+set (GMOCK_SOURCE_DIR "/usr/src/gmock" CACHE PATH "gmock source directory")
+set (GTEST_INCLUDE_DIR "${GMOCK_SOURCE_DIR}/gtest/include" CACHE PATH "gtest source include directory")
+set (GMOCK_BOTH_LIBRARIES gmock gmock_main)
+add_subdirectory(${GMOCK_SOURCE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/gmock")
 
 include_directories(
-    ${GTEST_INCLUDE_DIRS}
+    ${GMOCK_INCLUDE_DIR}
+    ${GTEST_INCLUDE_DIR}
     ${JSON_CPP_INCLUDE_DIRS}
 )
 
@@ -56,7 +57,7 @@ target_link_libraries(
 
     net-cpp
 
-    ${GTEST_BOTH_LIBRARIES}
+    ${GMOCK_BOTH_LIBRARIES}
     ${JSON_CPP_LIBRARIES}
 )
 
@@ -65,7 +66,7 @@ target_link_libraries(
 
     net-cpp
 
-    ${GTEST_BOTH_LIBRARIES}
+    ${GMOCK_BOTH_LIBRARIES}
     ${JSON_CPP_LIBRARIES}
 )
 
@@ -74,7 +75,7 @@ target_link_libraries(
 
     net-cpp
 
-    ${GTEST_BOTH_LIBRARIES}
+    ${GMOCK_BOTH_LIBRARIES}
     ${JSON_CPP_LIBRARIES}
 )
 
@@ -83,7 +84,7 @@ target_link_libraries(
 
     net-cpp
 
-    ${GTEST_BOTH_LIBRARIES}
+    ${GMOCK_BOTH_LIBRARIES}
 )
 
 add_test(header_test ${CMAKE_CURRENT_BINARY_DIR}/header_test)

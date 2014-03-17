@@ -42,3 +42,12 @@ Description: C++11 library for networking purposes - runtime library
  This package includes all the development headers and libraries for
  net-cpp.
 
+Package: libnet-cpp-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends},
+Suggests: libnet-cpp-dev,
+Description: Documentation files for libnet-cpp-dev
+ Net-Cpp is a simple and straightforward networking library for C++11.
+ .
+ This package includes documentation files for libnet-cpp development.

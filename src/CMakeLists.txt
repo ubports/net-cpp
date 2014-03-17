@@ -30,6 +30,7 @@ add_library(
   core/net/http/client.cpp
   core/net/http/error.cpp
   core/net/http/header.cpp
+  core/net/http/request.cpp
   core/net/http/status.cpp
 
   core/net/http/impl/curl/client.cpp
@@ -41,14 +42,19 @@ add_library(
 target_link_libraries(
   net-cpp
 
+  ${CMAKE_THREAD_LIBS_INIT}
+
   ${Boost_LIBRARIES}
   ${CURL_LIBRARIES}
 )
 
+set(symbol_map "${CMAKE_SOURCE_DIR}/symbols.map")
 set_target_properties(
   net-cpp
 
   PROPERTIES
+  LINK_FLAGS "${ldflags} -Wl,--version-script,${symbol_map}"
+  LINK_DEPENDS ${symbol_map}
   VERSION ${NET_CPP_VERSION_MAJOR}.${NET_CPP_VERSION_MINOR}.${NET_CPP_VERSION_PATCH}
   SOVERSION ${NET_CPP_VERSION_MAJOR}
 )

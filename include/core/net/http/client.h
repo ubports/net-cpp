@@ -108,15 +108,6 @@ public:
     virtual void stop() = 0;
 
     /**
-     * @brief request creates a Request for the provided URI and the given HTTP method.
-     * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
-     * @param method The HTTP method to use when requesting the resource.
-     * @param uri The uri describing the resource to be requested.
-     * @return An instance of a Request ready to be executed.
-     */
-    // virtual std::shared_ptr<Request> request(Method method, const std::string& uri) = 0;
-
-    /**
      * @brief get is a convenience method for issueing a GET request for the given URI.
      * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
      * @param configuration The configuration to issue a get request for.
@@ -137,6 +128,7 @@ public:
      * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
      * @param configuration The configuration to issue a get request for.
      * @param payload The data to be transmitted as part of the PUT request.
+     * @param size Size of the payload data in bytes.
      * @return An executable instance of class Request.
      */
     virtual std::shared_ptr<Request> put(const Request::Configuration& configuration, std::istream& payload, std::size_t size) = 0;

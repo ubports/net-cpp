@@ -88,16 +88,16 @@ struct HttpClientLoadTest : public ::testing::Test
 
             // We finally execute the query asynchronously.
             request->async_execute(
-                        http::Request::ProgressHandler{},
-                        [request, on_completed, response_verifier](const core::net::http::Response& response) mutable
-            {
-                EXPECT_TRUE(response_verifier(response));
-                on_completed();
-            },
-            [request, on_completed](const core::net::Error&) mutable
-            {
-                on_completed();
-            });
+                        http::Request::Handler()
+                        .on_response([request, on_completed, response_verifier](const core::net::http::Response& response) mutable
+                        {
+                            EXPECT_TRUE(response_verifier(response));
+                            on_completed();
+                        })
+                        .on_error([request, on_completed](const core::net::Error&) mutable
+                        {
+                            on_completed();
+                        }));
         }
 
         // We shut down our worker threads
