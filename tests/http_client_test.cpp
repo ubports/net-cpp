@@ -82,6 +82,21 @@ TEST(HttpClient, a_request_can_timeout)
     EXPECT_THROW(auto response = request->execute(default_progress_reporter), core::net::Error);
 }
 
+TEST(HttpClient, get_request_against_app_store_succeeds)
+{
+    auto client = http::make_client();
+
+    auto url = "https://search.apps.ubuntu.com/api/v1/search?q=%2Cframework%3Aubuntu-sdk-13.10%2Carchitecture%3Aamd64";
+
+    auto request = client->get(http::Request::Configuration::from_uri_as_string(url));
+
+    // We finally execute the query synchronously and story the response.
+    auto response = request->execute(default_progress_reporter);
+
+    // We expect the query to complete successfully
+    EXPECT_EQ(core::net::http::Status::ok, response.status);
+}
+
 TEST(HttpClient, get_request_for_existing_resource_succeeds)
 {
     // We obtain a default client instance, dispatching to the default implementation.

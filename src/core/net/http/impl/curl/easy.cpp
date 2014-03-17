@@ -202,6 +202,9 @@ easy::Handle::Handle() : d(new Private())
 {
     set_option(Option::http_auth, CURLAUTH_ANY);
     set_option(Option::sharing, d->shared.native());
+    set_option(Option::ssl_engine_default, easy::enable);
+    set_option(Option::ssl_verify_peer, easy::disable);
+    set_option(Option::ssl_verify_host, easy::disable);
     //set_option(Option::no_signal, easy::enable);
 }
 

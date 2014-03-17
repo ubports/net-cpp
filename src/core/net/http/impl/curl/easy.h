@@ -127,7 +127,10 @@ enum class Option
     password = CURLOPT_PASSWORD,
     no_signal = CURLOPT_NOSIGNAL,
     verbose = CURLOPT_VERBOSE,
-    timeout_ms = CURLOPT_TIMEOUT_MS
+    timeout_ms = CURLOPT_TIMEOUT_MS,
+    ssl_engine_default = CURLOPT_SSLENGINE_DEFAULT,
+    ssl_verify_peer = CURLOPT_SSL_VERIFYPEER,
+    ssl_verify_host = CURLOPT_SSL_VERIFYHOST
 };
 
 namespace native
