@@ -56,6 +56,7 @@ public:
 
 private:
     ::curl::multi::Handle multi;
+
 };
 }
 }

@@ -86,17 +86,21 @@ struct HttpClientLoadTest : public ::testing::Test
             // The client mostly acts as a factory for http requests.
             auto request = request_factory(client);
 
+            //auto once = client->request_store().add(request);
+
             // We finally execute the query asynchronously.
             request->async_execute(
                         http::Request::Handler()
-                        .on_response([request, on_completed, response_verifier](const core::net::http::Response& response) mutable
+                        .on_response([on_completed, response_verifier](const core::net::http::Response& response) mutable
                         {
                             EXPECT_TRUE(response_verifier(response));
                             on_completed();
+                            //once();
                         })
-                        .on_error([request, on_completed](const core::net::Error&) mutable
+                        .on_error([on_completed](const core::net::Error&) mutable
                         {
                             on_completed();
+                            //once();
                         }));
         }
 

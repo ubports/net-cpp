@@ -347,6 +347,7 @@ void multi::Handle::Private::process_multi_info()
                 multi::native::remove_handle(handle, native_easy);
             } catch(...)
             {
+                std::cout << "Something weird happened" << std::endl;
             }
         }
     }
@@ -376,7 +377,7 @@ void multi::Handle::Private::Timeout::Private::cancel()
 
 void multi::Handle::Private::Timeout::Private::async_wait_for(const std::shared_ptr<Handle::Private>& context, const std::chrono::milliseconds& ms)
 {
-    if (ms.count() >= 0)
+    if (ms.count() > 0)
     {
         auto self(shared_from_this());
         timer.expires_from_now(boost::posix_time::milliseconds{ms.count()});

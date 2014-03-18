@@ -23,6 +23,7 @@
 #include <core/net/http/error.h>
 #include <core/net/http/response.h>
 
+#include "client.h"
 #include "curl.h"
 
 #include <algorithm>
@@ -44,10 +45,8 @@ namespace curl
 // of StateGuard goes out of scope.
 struct StateGuard
 {
-    StateGuard(::curl::easy::Handle easy,
-               std::atomic<core::net::http::Request::State>& state)
-        : easy(easy),
-          state(state)
+    StateGuard(std::atomic<core::net::http::Request::State>& state)
+          : state(state)
     {
         state.store(core::net::http::Request::State::active);
     }
@@ -55,18 +54,24 @@ struct StateGuard
     ~StateGuard()
     {
         state.store(core::net::http::Request::State::done);
-        easy.release();
     }
 
-    ::curl::easy::Handle easy;
     std::atomic<core::net::http::Request::State>& state;
 };
 
-class Request : public core::net::http::Request
+class Request : public core::net::http::Request,
+                public std::enable_shared_from_this<Request>
 {
 public:
+
+    static std::shared_ptr<Request> create(::curl::multi::Handle multi,
+                                           ::curl::easy::Handle easy)
+    {
+        return std::make_shared<Request>(multi, easy);
+    }
+
     Request(::curl::multi::Handle multi,
-            const ::curl::easy::Handle& easy)
+            ::curl::easy::Handle easy)
         : atomic_state(core::net::http::Request::State::ready),
           multi(multi),
           easy(easy)
@@ -91,7 +96,7 @@ public:
         if (atomic_state.load() != core::net::http::Request::State::ready)
             throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
 
-        StateGuard sg{easy, atomic_state};
+        StateGuard sg{atomic_state};
         Context context;
 
         if (ph)
@@ -158,14 +163,16 @@ public:
         if (atomic_state.load() != core::net::http::Request::State::ready)
             throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
 
-        auto sg = std::make_shared<StateGuard>(easy, atomic_state);
+        auto sg = std::make_shared<StateGuard>(atomic_state);
         auto context = std::make_shared<Context>();
 
-        easy.on_finished([=](::curl::Code code)
+        auto thiz = shared_from_this();
+
+        easy.on_finished([thiz, handler, context](::curl::Code code)
         {
             if (code == ::curl::Code::ok)
             {
-                context->result.status = easy.status();
+                context->result.status = thiz->easy.status();
                 context->result.body = context->body.str();
 
                 if (handler.on_response())
@@ -178,11 +185,13 @@ public:
                     handler.on_error()(core::net::http::Error(ss.str(), CORE_FROM_HERE()));
                 }
             }
+
+            thiz->easy.release();
         });
 
         if (handler.on_progress())
         {
-            easy.on_progress([=](void*, double dltotal, double dlnow, double ultotal, double ulnow)
+            easy.on_progress([handler](void*, double dltotal, double dlnow, double ultotal, double ulnow)
             {
                 Request::Progress progress;
                 progress.download.total = dltotal;
@@ -203,14 +212,14 @@ public:
         }
 
         easy.on_write_data(
-                    [=](char* data, std::size_t size, std::size_t nmemb)
+                    [context](char* data, std::size_t size, std::size_t nmemb)
                     {
                         context->body.write(data, size * nmemb);
                         return size * nmemb;
                     });
 
         easy.on_write_header(
-                    [=](void* data, std::size_t size, std::size_t nmemb)
+                    [context](void* data, std::size_t size, std::size_t nmemb)
                     {
                         const char* begin = static_cast<const char*>(data);
                         const char* end = begin + size*nmemb;
