@@ -391,8 +391,7 @@ namespace services
 {
 namespace location
 {
-//const char* host() { return "https://location.services.mozilla.com"; }
-const char* host() { return "http://54.80.82.190:7001/"; }
+const char* host() { return "https://location.services.mozilla.com"; }
 
 namespace resources
 {
