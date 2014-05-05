@@ -33,7 +33,7 @@ namespace httpbin
 {
 const char* host()
 {
-    return "http://httpbin.org";
+    return "http://127.0.0.1:5000";
 }
 namespace resources
 {

@@ -54,7 +54,8 @@ std::shared_ptr<http::Request> http::impl::curl::Client::head(const http::Reques
 {
     ::curl::easy::Handle handle;
     handle.method(http::Method::head)
-            .url(configuration.uri.c_str());
+            .url(configuration.uri.c_str())
+            .header(configuration.header);
 
     if (configuration.authentication_handler.for_http)
     {
@@ -69,7 +70,8 @@ std::shared_ptr<http::Request> http::impl::curl::Client::get(const http::Request
 {
     ::curl::easy::Handle handle;
     handle.method(http::Method::get)
-            .url(configuration.uri.c_str());
+            .url(configuration.uri.c_str())
+            .header(configuration.header);
 
     if (configuration.authentication_handler.for_http)
     {
@@ -88,6 +90,7 @@ std::shared_ptr<http::Request> http::impl::curl::Client::post(
     ::curl::easy::Handle handle;
     handle.method(http::Method::post)
             .url(configuration.uri.c_str())
+            .header(configuration.header)
             .post_data(payload.c_str(), ct);
 
     if (configuration.authentication_handler.for_http)
@@ -107,6 +110,7 @@ std::shared_ptr<http::Request> http::impl::curl::Client::put(
     ::curl::easy::Handle handle;
     handle.method(http::Method::put)
             .url(configuration.uri.c_str())
+            .header(configuration.header)
             .on_read_data([&payload, size](void* dest, std::size_t /*in_size*/, std::size_t /*nmemb*/)
             {
                 auto result = payload.readsome(static_cast<char*>(dest), size);

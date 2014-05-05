@@ -76,3 +76,9 @@ std::string http::Header::canonicalize_key(const std::string& key)
 
     return result;
 }
+
+void http::Header::enumerate(const std::function<void(const std::string&, const std::set<std::string>&)>& enumerator) const
+{
+    for (const auto& pair : fields)
+        enumerator(pair.first, pair.second);
+}

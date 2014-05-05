@@ -19,6 +19,7 @@
 #define CORE_NET_HTTP_IMPL_CURL_EASY_H_
 
 #include <core/net/http/client.h>
+#include <core/net/http/header.h>
 #include <core/net/http/method.h>
 #include <core/net/http/status.h>
 
@@ -32,6 +33,8 @@
 
 namespace curl
 {
+typedef curl_slist StringList;
+
 enum class Code
 {
     ok = CURLE_OK,
@@ -114,6 +117,7 @@ enum class Option
     read_data = CURLOPT_READDATA,
     url = CURLOPT_URL,
     user_agent = CURLOPT_USERAGENT,
+    http_header = CURLOPT_HTTPHEADER,
     http_auth = CURLOPT_HTTPAUTH,
     http_get = CURLOPT_HTTPGET,
     http_post = CURLOPT_POST,
@@ -141,6 +145,10 @@ Code init();
 void cleanup();
 // URL escapes the given input string.
 std::string escape(const std::string& in);
+// Append a string to a string list
+StringList* append_string_to_list(StringList* in, const char* string);
+// Frees the overall string list
+void free_string_list(StringList* in);
 }
 
 namespace easy
@@ -293,6 +301,8 @@ public:
     Handle& method(core::net::http::Method method);
     // Sets the data to be posted by this instance.
     Handle& post_data(const std::string& data, const std::string&);
+    // Sets custom request headers
+    Handle& header(const core::net::http::Header& header);
 
     // Queries the current status of this instance.
     core::net::http::Status status();

@@ -84,6 +84,11 @@ public:
      */
     virtual void set(const std::string& key, const std::string& value);
 
+    /**
+     * @brief enumerate iterates over the known fields and invokes the given enumerator for each of them.
+     */
+    virtual void enumerate(const std::function<void(const std::string&, const std::set<std::string>&)>& enumerator) const;
+
 private:
     /// @cond
     std::map<std::string, std::set<std::string>> fields;

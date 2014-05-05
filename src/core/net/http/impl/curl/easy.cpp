@@ -117,12 +117,24 @@ std::string easy::native::unescape(easy::native::Handle handle, const std::strin
     return result;
 }
 
+// Append a string to a string list
+::curl::StringList* ::curl::native::append_string_to_list(::curl::StringList* in, const char* string)
+{
+    return curl_slist_append(in, string);
+}
+
+// Frees the overall string list
+void ::curl::native::free_string_list(::curl::StringList* in)
+{
+    curl_slist_free_all(in);
+}
+
 struct easy::Handle::Private
 {
     Private()
-        : handle(
-              easy::native::init(),
-              [](easy::native::Handle handle) { easy::native::cleanup(handle); })
+        : handle(easy::native::init(),
+                 [](easy::native::Handle handle) { easy::native::cleanup(handle); }),
+          header_string_list(nullptr)
     {
     }
 
@@ -135,6 +147,8 @@ struct easy::Handle::Private
     easy::Handle::OnReadData on_read_data_cb;
     easy::Handle::OnWriteData on_write_data_cb;
     easy::Handle::OnWriteHeader on_write_header_cb;
+
+    ::curl::StringList* header_string_list;
 };
 
 int easy::Handle::progress_cb(void* data, double dltotal, double dlnow, double ultotal, double ulnow)
@@ -361,6 +375,27 @@ easy::Handle& easy::Handle::post_data(const std::string& data, const std::string
     long content_length = data.size();
     set_option(Option::post_field_size, content_length);
     set_option(Option::copy_postfields, data.c_str());
+
+    return *this;
+}
+
+easy::Handle& easy::Handle::header(const core::net::http::Header& header)
+{
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+
+    static constexpr const char* separator = ": ";
+
+    header.enumerate([this](const std::string& key, const std::set<std::string>& values)
+    {
+        for (const auto& value : values)
+        {
+            std::stringstream ss; ss << key << separator << value;
+            d->header_string_list = ::curl::native::append_string_to_list(d->header_string_list, ss.str().c_str());
+        }
+    });
+
+    if (d->header_string_list)
+        set_option(Option::http_header, d->header_string_list);
 
     return *this;
 }

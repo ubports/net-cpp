@@ -25,7 +25,6 @@ add_library(
   core/location.cpp
 
   core/net/error.cpp
-  core/net/uri.cpp
 
   core/net/http/client.cpp
   core/net/http/error.cpp

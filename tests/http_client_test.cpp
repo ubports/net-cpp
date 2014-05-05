@@ -76,7 +76,7 @@ TEST(HttpClient, a_request_can_timeout)
 
     // The client mostly acts as a factory for http requests.
     auto request = client->head(http::Request::Configuration::from_uri_as_string(url));
-    request->set_timeout(std::chrono::milliseconds{5});
+    request->set_timeout(std::chrono::milliseconds{1});
 
     // We finally execute the query synchronously and story the response.
     EXPECT_THROW(auto response = request->execute(default_progress_reporter), core::net::Error);
@@ -121,6 +121,39 @@ TEST(HttpClient, get_request_for_existing_resource_succeeds)
     EXPECT_TRUE(reader.parse(response.body, root));
     // The url field of the payload should equal the original url we requested.
     EXPECT_EQ(url, root["url"].asString());
+}
+
+TEST(HttpClient, get_request_with_custom_headers_for_existing_resource_succeeds)
+{
+    // We obtain a default client instance, dispatching to the default implementation.
+    auto client = http::make_client();
+
+    // Url pointing to the resource we would like to access via http.
+    auto url = std::string(httpbin::host()) + httpbin::resources::headers();
+
+    // The client mostly acts as a factory for http requests.
+    auto configuration = http::Request::Configuration::from_uri_as_string(url);
+    configuration.header.set("Test1", "42");
+    configuration.header.set("Test2", "43");
+    auto request = client->get(configuration);
+
+    // All endpoint data on httpbin.org is JSON encoded.
+    json::Value root;
+    json::Reader reader;
+
+    // We finally execute the query synchronously and story the response.
+    auto response = request->execute(default_progress_reporter);
+
+    // We expect the query to complete successfully
+    EXPECT_EQ(core::net::http::Status::ok, response.status);
+
+    // Parsing the body of the response as JSON should succeed.
+    EXPECT_TRUE(reader.parse(response.body, root));
+
+    auto headers = root["headers"];
+
+    EXPECT_EQ("42", headers["Test1"].asString());
+    EXPECT_EQ("43", headers["Test2"].asString());
 }
 
 TEST(HttpClient, get_request_for_existing_resource_guarded_by_basic_auth_succeeds)
@@ -397,8 +430,8 @@ namespace resources
 {
 namespace v1
 {
-const char* search() { return "/v1/search"; }
-const char* submit() { return "/v1/submit"; }
+const char* search() { return "/v1/search?key=net-cpp-testing"; }
+const char* submit() { return "/v1/submit?key=net-cpp-testing"; }
 }
 }
 }
@@ -450,9 +483,9 @@ TEST(HttpClient, search_for_location_on_mozillas_location_service_succeeds)
 
     // We cannot be sure that the server has got information for the given
     // cell and wifi ids. For that, we disable the test.
-    // EXPECT_EQ("ok", result["status"].asString());
-    // EXPECT_DOUBLE_EQ(-22.7539192, result["lat"].asDouble());
-    // EXPECT_DOUBLE_EQ(-43.4371081, result["lon"].asDouble());
+    EXPECT_EQ("ok", result["status"].asString());
+    //EXPECT_DOUBLE_EQ(-22.7539192, result["lat"].asDouble());
+    //EXPECT_DOUBLE_EQ(-43.4371081, result["lon"].asDouble());
 }
 
 // See https://mozilla-ichnaea.readthedocs.org/en/latest/api/submit.html

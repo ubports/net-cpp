@@ -23,6 +23,7 @@
 #include <core/net/uri.h>
 
 #include <core/net/http/error.h>
+#include <core/net/http/header.h>
 
 #include <chrono>
 #include <memory>
@@ -176,6 +177,9 @@ public:
 
         /** Uri of the web resource to issue a request for. */
         std::string uri;
+
+        /** Custom header fields that are added to the request. */
+        Header header;
 
         /** Invoked to report progress. */
         ProgressHandler on_progress;
