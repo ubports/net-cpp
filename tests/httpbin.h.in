@@ -40,7 +40,7 @@ struct Instance
     Instance()
         : server
           {
-              core::posix::exec("/usr/bin/python", {"@CMAKE_CURRENT_SOURCE_DIR@/httpbin/manage.py", "runserver"}, {}, core::posix::StandardStream::empty)
+              core::posix::exec("/usr/bin/python", {"@CMAKE_CURRENT_BINARY_DIR@/httpbin/manage.py", "runserver"}, {}, core::posix::StandardStream::empty)
           }
     {
         std::this_thread::sleep_for(std::chrono::milliseconds{250});

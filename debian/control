@@ -10,9 +10,13 @@ Build-Depends: cmake,
                libboost-system-dev,
                libcurl3,
                libcurl4-openssl-dev,
+               libjsoncpp-dev,
+               libprocess-cpp-dev,
                pkg-config,
+               python-decorator,
                python-flask,
                python-flask-script,
+               python-simplejson,
 Standards-Version: 3.9.5
 Section: libs
 Homepage: https://launchpad.net/net-cpp
