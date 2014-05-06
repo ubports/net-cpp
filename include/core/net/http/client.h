@@ -150,7 +150,7 @@ public:
      * @param values Key-value pairs to be added to the payload in url-encoded format.
      * @return An executable instance of class Request.
      */
-    virtual std::shared_ptr<Request> post_form(const Request::Configuration& configuration, const Uri::Values& values);
+    virtual std::shared_ptr<Request> post_form(const Request::Configuration& configuration, const std::map<std::string, std::string>& values);
 
 protected:
     Client() = default;

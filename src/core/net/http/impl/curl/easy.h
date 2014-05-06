@@ -29,6 +29,7 @@
 
 #include <chrono>
 #include <iosfwd>
+#include <sstream>
 #include <system_error>
 
 namespace curl

@@ -20,6 +20,8 @@
 
 #include <core/net/http/content_type.h>
 
+#include <sstream>
+
 namespace net = core::net;
 namespace http = net::http;
 
@@ -34,7 +36,7 @@ http::Client::Errors::HttpMethodNotSupported::HttpMethodNotSupported(
 
 std::shared_ptr<http::Request> http::Client::post_form(
         const http::Request::Configuration& configuration,
-        const net::Uri::Values& values)
+        const std::map<std::string, std::string>& values)
 {
     std::stringstream ss;
     bool first{true};

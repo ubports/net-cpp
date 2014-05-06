@@ -20,8 +20,6 @@
 
 #include <core/net/visibility.h>
 
-#include <core/net/uri.h>
-
 #include <core/net/http/error.h>
 #include <core/net/http/header.h>
 
