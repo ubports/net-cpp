@@ -17,7 +17,6 @@
  */
 
 #include <core/net/error.h>
-#include <core/net/uri.h>
 #include <core/net/http/client.h>
 #include <core/net/http/content_type.h>
 #include <core/net/http/request.h>
@@ -376,7 +375,7 @@ TEST(HttpClient, post_form_request_for_existing_resource_succeeds)
     // Url pointing to the resource we would like to access via http.
     auto url = std::string(httpbin::host) + httpbin::resources::post();
 
-    core::net::Uri::Values values
+    std::map<std::string, std::string> values
     {
         {"test", "test"}
     };
