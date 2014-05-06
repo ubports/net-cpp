@@ -52,7 +52,7 @@ struct HttpClientLoadTest : public ::testing::Test
         std::thread worker{[client]() { client->run(); }};
 
         // Url pointing to the resource we would like to access via http.
-        auto url = std::string(httpbin::host()) + httpbin::resources::get();
+        auto url = std::string(httpbin::host) + httpbin::resources::get();
 
         std::size_t completed{1};
         std::size_t total{200};
@@ -110,11 +110,12 @@ struct HttpClientLoadTest : public ::testing::Test
     }
 };
 
+httpbin::Instance instance;
 }
 
 TEST_F(HttpClientLoadTest, async_head_request_for_existing_resource_succeeds)
 {
-    auto url = std::string(httpbin::host()) + httpbin::resources::get();
+    auto url = std::string(httpbin::host) + httpbin::resources::get();
 
     auto request_factory = [url](const std::shared_ptr<http::Client>& client)
     {
@@ -139,7 +140,7 @@ TEST_F(HttpClientLoadTest, async_head_request_for_existing_resource_succeeds)
 
 TEST_F(HttpClientLoadTest, async_get_request_for_existing_resource_succeeds)
 {
-    auto url = std::string(httpbin::host()) + httpbin::resources::get();
+    auto url = std::string(httpbin::host) + httpbin::resources::get();
 
     auto request_factory = [url](const std::shared_ptr<http::Client>& client)
     {
@@ -168,7 +169,7 @@ TEST_F(HttpClientLoadTest, async_get_request_for_existing_resource_succeeds)
 
 TEST_F(HttpClientLoadTest, async_post_request_for_existing_resource_succeeds)
 {
-    auto url = std::string(httpbin::host()) + httpbin::resources::post();
+    auto url = std::string(httpbin::host) + httpbin::resources::post();
     auto payload = "{ 'test': 'test' }";
 
     auto request_factory = [url, payload](const std::shared_ptr<http::Client>& client)

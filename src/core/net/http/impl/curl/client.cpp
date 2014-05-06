@@ -57,6 +57,12 @@ std::shared_ptr<http::Request> http::impl::curl::Client::head(const http::Reques
             .url(configuration.uri.c_str())
             .header(configuration.header);
 
+    //const long value = configuration.ssl.verify_host ? ::curl::easy::enable : ::curl::easy::disable;
+    handle.set_option(::curl::Option::ssl_verify_host,
+                      configuration.ssl.verify_host ? ::curl::easy::enable_ssl_host_verification : ::curl::easy::disable);
+    handle.set_option(::curl::Option::ssl_verify_peer,
+                      configuration.ssl.verify_peer ? ::curl::easy::enable : ::curl::easy::disable);
+
     if (configuration.authentication_handler.for_http)
     {
         auto credentials = configuration.authentication_handler.for_http(configuration.uri);
@@ -70,8 +76,13 @@ std::shared_ptr<http::Request> http::impl::curl::Client::get(const http::Request
 {
     ::curl::easy::Handle handle;
     handle.method(http::Method::get)
-            .url(configuration.uri.c_str())
-            .header(configuration.header);
+          .url(configuration.uri.c_str())
+          .header(configuration.header);
+
+    handle.set_option(::curl::Option::ssl_verify_host,
+                      configuration.ssl.verify_host ? ::curl::easy::enable_ssl_host_verification : ::curl::easy::disable);
+    handle.set_option(::curl::Option::ssl_verify_peer,
+                      configuration.ssl.verify_peer ? ::curl::easy::enable : ::curl::easy::disable);
 
     if (configuration.authentication_handler.for_http)
     {
@@ -92,6 +103,11 @@ std::shared_ptr<http::Request> http::impl::curl::Client::post(
             .url(configuration.uri.c_str())
             .header(configuration.header)
             .post_data(payload.c_str(), ct);
+
+    handle.set_option(::curl::Option::ssl_verify_host,
+                      configuration.ssl.verify_host ? ::curl::easy::enable_ssl_host_verification : ::curl::easy::disable);
+    handle.set_option(::curl::Option::ssl_verify_peer,
+                      configuration.ssl.verify_peer ? ::curl::easy::enable : ::curl::easy::disable);
 
     if (configuration.authentication_handler.for_http)
     {
@@ -116,6 +132,11 @@ std::shared_ptr<http::Request> http::impl::curl::Client::put(
                 auto result = payload.readsome(static_cast<char*>(dest), size);
                 return result;
             }, size);
+
+    handle.set_option(::curl::Option::ssl_verify_host,
+                      configuration.ssl.verify_host ? ::curl::easy::enable_ssl_host_verification : ::curl::easy::disable);
+    handle.set_option(::curl::Option::ssl_verify_peer,
+                      configuration.ssl.verify_peer ? ::curl::easy::enable : ::curl::easy::disable);
 
     if (configuration.authentication_handler.for_http)
     {

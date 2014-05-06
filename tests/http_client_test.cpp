@@ -46,6 +46,8 @@ auto default_progress_reporter = [](const http::Request::Progress& progress)
 
     return http::Request::Progress::Next::continue_operation;
 };
+
+httpbin::Instance instance;
 }
 
 TEST(HttpClient, head_request_for_existing_resource_succeeds)
@@ -54,7 +56,7 @@ TEST(HttpClient, head_request_for_existing_resource_succeeds)
     auto client = http::make_client();
 
     // Url pointing to the resource we would like to access via http.
-    auto url = std::string(httpbin::host()) + httpbin::resources::get();
+    auto url = std::string(httpbin::host) + httpbin::resources::get();
 
     // The client mostly acts as a factory for http requests.
     auto request = client->head(http::Request::Configuration::from_uri_as_string(url));
@@ -72,7 +74,7 @@ TEST(HttpClient, a_request_can_timeout)
     auto client = http::make_client();
 
     // Url pointing to the resource we would like to access via http.
-    auto url = std::string(httpbin::host()) + httpbin::resources::get();
+    auto url = std::string(httpbin::host) + httpbin::resources::get();
 
     // The client mostly acts as a factory for http requests.
     auto request = client->head(http::Request::Configuration::from_uri_as_string(url));
@@ -95,6 +97,8 @@ TEST(HttpClient, get_request_against_app_store_succeeds)
 
     // We expect the query to complete successfully
     EXPECT_EQ(core::net::http::Status::ok, response.status);
+
+    // std::cout << response.body << std::endl;
 }
 
 TEST(HttpClient, get_request_for_existing_resource_succeeds)
@@ -103,7 +107,7 @@ TEST(HttpClient, get_request_for_existing_resource_succeeds)
     auto client = http::make_client();
 
     // Url pointing to the resource we would like to access via http.
-    auto url = std::string(httpbin::host()) + httpbin::resources::get();
+    auto url = std::string(httpbin::host) + httpbin::resources::get();
 
     // The client mostly acts as a factory for http requests.
     auto request = client->get(http::Request::Configuration::from_uri_as_string(url));
@@ -129,12 +133,13 @@ TEST(HttpClient, get_request_with_custom_headers_for_existing_resource_succeeds)
     auto client = http::make_client();
 
     // Url pointing to the resource we would like to access via http.
-    auto url = std::string(httpbin::host()) + httpbin::resources::headers();
+    auto url = std::string(httpbin::host) + httpbin::resources::headers();
 
     // The client mostly acts as a factory for http requests.
     auto configuration = http::Request::Configuration::from_uri_as_string(url);
     configuration.header.set("Test1", "42");
     configuration.header.set("Test2", "43");
+
     auto request = client->get(configuration);
 
     // All endpoint data on httpbin.org is JSON encoded.
@@ -162,7 +167,7 @@ TEST(HttpClient, get_request_for_existing_resource_guarded_by_basic_auth_succeed
     auto client = http::make_client();
 
     // Url pointing to the resource we would like to access via http.
-    auto url = std::string(httpbin::host()) + httpbin::resources::basic_auth();
+    auto url = std::string(httpbin::host) + httpbin::resources::basic_auth();
 
     // The client mostly acts as a factory for http requests.
     auto configuration = http::Request::Configuration::from_uri_as_string(url);
@@ -196,7 +201,7 @@ TEST(HttpClient, DISABLED_get_request_for_existing_resource_guarded_by_digest_au
     auto client = http::make_client();
 
     // Url pointing to the resource we would like to access via http.
-    auto url = std::string(httpbin::host()) + httpbin::resources::digest_auth();
+    auto url = std::string(httpbin::host) + httpbin::resources::digest_auth();
 
     // The client mostly acts as a factory for http requests.
     auto configuration = http::Request::Configuration::from_uri_as_string(url);
@@ -232,7 +237,7 @@ TEST(HttpClient, async_get_request_for_existing_resource_succeeds)
     std::thread worker{[client]() { client->run(); }};
 
     // Url pointing to the resource we would like to access via http.
-    auto url = std::string(httpbin::host()) + httpbin::resources::get();
+    auto url = std::string(httpbin::host) + httpbin::resources::get();
 
     // The client mostly acts as a factory for http requests.
     auto request = client->get(http::Request::Configuration::from_uri_as_string(url));
@@ -271,8 +276,6 @@ TEST(HttpClient, async_get_request_for_existing_resource_succeeds)
     // We shut down our worker thread
     if (worker.joinable())
         worker.join();
-
-
 }
 
 TEST(HttpClient, async_get_request_for_existing_resource_guarded_by_basic_authentication_succeeds)
@@ -284,7 +287,7 @@ TEST(HttpClient, async_get_request_for_existing_resource_guarded_by_basic_authen
     std::thread worker{[client]() { client->run(); }};
 
     // Url pointing to the resource we would like to access via http.
-    auto url = std::string(httpbin::host()) + httpbin::resources::basic_auth();
+    auto url = std::string(httpbin::host) + httpbin::resources::basic_auth();
 
     // The client mostly acts as a factory for http requests.
     auto configuration = http::Request::Configuration::from_uri_as_string(url);
@@ -341,7 +344,7 @@ TEST(HttpClient, post_request_for_existing_resource_succeeds)
     auto client = http::make_client();
 
     // Url pointing to the resource we would like to access via http.
-    auto url = std::string(httpbin::host()) + httpbin::resources::post();
+    auto url = std::string(httpbin::host) + httpbin::resources::post();
 
     std::string payload = "{ 'test': 'test' }";
 
@@ -371,7 +374,7 @@ TEST(HttpClient, post_form_request_for_existing_resource_succeeds)
     auto client = http::make_client();
 
     // Url pointing to the resource we would like to access via http.
-    auto url = std::string(httpbin::host()) + httpbin::resources::post();
+    auto url = std::string(httpbin::host) + httpbin::resources::post();
 
     core::net::Uri::Values values
     {
@@ -397,7 +400,7 @@ TEST(HttpClient, post_form_request_for_existing_resource_succeeds)
 TEST(HttpClient, put_request_for_existing_resource_succeeds)
 {
     auto client = http::make_client();
-    auto url = std::string(httpbin::host()) + httpbin::resources::put();
+    auto url = std::string(httpbin::host) + httpbin::resources::put();
 
     const std::string value{"{ 'test': 'test' }"};
     std::stringstream payload(value);
@@ -424,7 +427,10 @@ namespace services
 {
 namespace location
 {
-const char* host() { return "https://location.services.mozilla.com"; }
+constexpr const char* host
+{
+    "https://location.services.mozilla.com"
+};
 
 namespace resources
 {
@@ -441,7 +447,7 @@ const char* submit() { return "/v1/submit?key=net-cpp-testing"; }
 
 // See https://mozilla-ichnaea.readthedocs.org/en/latest/api/search.html
 // for API and endpoint documentation.
-TEST(HttpClient, search_for_location_on_mozillas_location_service_succeeds)
+TEST(HttpClient, DISABLED_search_for_location_on_mozillas_location_service_succeeds)
 {
     json::FastWriter writer;
     json::Value search;
@@ -467,7 +473,7 @@ TEST(HttpClient, search_for_location_on_mozillas_location_service_succeeds)
 
     auto client = http::make_client();
     auto url =
-            std::string(com::mozilla::services::location::host()) +
+            std::string(com::mozilla::services::location::host) +
             com::mozilla::services::location::resources::v1::search();
     auto request = client->post(http::Request::Configuration::from_uri_as_string(url),
                                 writer.write(search),
@@ -490,7 +496,7 @@ TEST(HttpClient, search_for_location_on_mozillas_location_service_succeeds)
 
 // See https://mozilla-ichnaea.readthedocs.org/en/latest/api/submit.html
 // for API and endpoint documentation.
-TEST(HttpClient, submit_of_location_on_mozillas_location_service_succeeds)
+TEST(HttpClient, DISABLED_submit_of_location_on_mozillas_location_service_succeeds)
 {
     json::Value submit;
     json::Value cell;
@@ -524,7 +530,7 @@ TEST(HttpClient, submit_of_location_on_mozillas_location_service_succeeds)
     json::FastWriter writer;
     auto client = http::make_client();
     auto url =
-            std::string(com::mozilla::services::location::host()) +
+            std::string(com::mozilla::services::location::host) +
             com::mozilla::services::location::resources::v1::submit();
     auto request = client->post(http::Request::Configuration::from_uri_as_string(url),
                                 writer.write(submit),

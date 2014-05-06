@@ -19,6 +19,9 @@
 #ifndef HTTPBIN_H_
 #define HTTPBIN_H_
 
+#include <core/posix/exec.h>
+
+#include <thread>
 /**
  *
  * Testing an HTTP Library can become difficult sometimes. Postbin is fantastic
@@ -31,10 +34,34 @@
  */
 namespace httpbin
 {
-const char* host()
+/** Fires up a local instance of httpbin. */
+struct Instance
 {
-    return "http://127.0.0.1:5000";
-}
+    Instance()
+        : server
+          {
+              core::posix::exec("/usr/bin/python", {"@CMAKE_CURRENT_SOURCE_DIR@/httpbin/manage.py", "runserver"}, {}, core::posix::StandardStream::empty)
+          }
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds{250});
+    }
+
+    ~Instance()
+    {
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
+        std::error_code ec;
+        server.send_signal(core::posix::Signal::sig_term, ec);
+        server.wait_for(core::posix::wait::Flags::untraced);
+    }
+
+    core::posix::ChildProcess server;
+};
+
+constexpr const char* host
+{
+    "http://127.0.0.1:5000"
+};
+
 namespace resources
 {
 /** A non-existing resource */

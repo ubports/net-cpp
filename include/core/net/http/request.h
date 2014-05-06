@@ -190,6 +190,22 @@ public:
         /** Invoked to report a request that finished with an error. */
         ErrorHandler on_error;
 
+        /** SSL-specific options. Please be very careful when adjusting these. */
+        struct
+        {
+            /** Yes, we want to verify our peer by default. */
+            bool verify_peer
+            {
+                true
+            };
+
+            /** Yes, we want to be strict and verify the host by default, too. */
+            bool verify_host
+            {
+                true
+            };
+        } ssl;
+
         /** Encapsulates proxy and http authentication handlers. */
         struct
         {

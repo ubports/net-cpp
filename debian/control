@@ -11,6 +11,8 @@ Build-Depends: cmake,
                libcurl3,
                libcurl4-openssl-dev,
                pkg-config,
+               python-flask,
+               python-flask-script,
 Standards-Version: 3.9.5
 Section: libs
 Homepage: https://launchpad.net/net-cpp

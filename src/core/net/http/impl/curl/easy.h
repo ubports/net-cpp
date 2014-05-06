@@ -159,6 +159,9 @@ constexpr static const long disable = 0;
 // Constant for enabling a feature on a curl easy instance.
 constexpr static const long enable = 1;
 
+// Constant for enabling automatic SSL host verification.
+constexpr static const long enable_ssl_host_verification = 2;
+
 // Throws a std::runtime_error if the parameter to the function does match the
 // constant templated value.
 template<Code ref>
