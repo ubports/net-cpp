@@ -46,7 +46,13 @@ auto default_progress_reporter = [](const http::Request::Progress& progress)
     return http::Request::Progress::Next::continue_operation;
 };
 
-httpbin::Instance instance;
+bool init()
+{
+    static httpbin::Instance instance;
+    return true;
+}
+
+static const bool is_initialized = init();
 }
 
 TEST(HttpClient, head_request_for_existing_resource_succeeds)

@@ -111,7 +111,12 @@ struct HttpClientLoadTest : public ::testing::Test
     }
 };
 
-httpbin::Instance instance;
+bool init()
+{
+    static httpbin::Instance instance;
+}
+
+static const bool is_initialized = init();
 }
 
 TEST_F(HttpClientLoadTest, async_head_request_for_existing_resource_succeeds)

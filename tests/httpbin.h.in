@@ -22,6 +22,7 @@
 #include <core/posix/exec.h>
 
 #include <thread>
+
 /**
  *
  * Testing an HTTP Library can become difficult sometimes. Postbin is fantastic
@@ -43,15 +44,14 @@ struct Instance
               core::posix::exec("/usr/bin/python", {"@CMAKE_CURRENT_BINARY_DIR@/httpbin/manage.py", "runserver"}, {}, core::posix::StandardStream::empty)
           }
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds{250});
+        std::this_thread::sleep_for(std::chrono::milliseconds{500});
     }
 
     ~Instance()
     {
-        std::cout << __PRETTY_FUNCTION__ << std::endl;
         std::error_code ec;
         server.send_signal(core::posix::Signal::sig_term, ec);
-        server.wait_for(core::posix::wait::Flags::untraced);
+        server.wait_for(core::posix::wait::Flags::untraced | core::posix::wait::Flags::no_hang);
     }
 
     core::posix::ChildProcess server;
