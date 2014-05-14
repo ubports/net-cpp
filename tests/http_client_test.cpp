@@ -103,7 +103,11 @@ TEST(HttpClient, get_request_against_app_store_succeeds)
     // We expect the query to complete successfully
     EXPECT_EQ(core::net::http::Status::ok, response.status);
 
-    // std::cout << response.body << std::endl;
+    response.header.enumerate([](const std::string& key, const std::set<std::string>& values)
+    {
+        for (const auto& value : values)
+            std::cout << key << " -> " <<  value << std::endl;
+    });
 }
 
 TEST(HttpClient, get_request_for_existing_resource_succeeds)

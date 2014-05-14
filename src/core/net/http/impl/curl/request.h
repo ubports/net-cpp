@@ -136,9 +136,14 @@ public:
 
                         if (position != begin && position < end)
                         {
+                            auto trimmed = position+1;
+
+                            while (trimmed != end && std::isspace(*trimmed))
+                                trimmed++;
+
                             context.result.header.add(
                                         std::string{begin, position},
-                                        std::string{position+1, end});
+                                        std::string{trimmed, end-2});
                         }
 
                         return size * nmemb;

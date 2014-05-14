@@ -114,6 +114,7 @@ struct HttpClientLoadTest : public ::testing::Test
 bool init()
 {
     static httpbin::Instance instance;
+    return true;
 }
 
 static const bool is_initialized = init();
