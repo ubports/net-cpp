@@ -89,7 +89,7 @@ TEST(HttpClient, a_request_can_timeout)
     EXPECT_THROW(auto response = request->execute(default_progress_reporter), core::net::Error);
 }
 
-TEST(HttpClient, get_request_against_app_store_succeeds)
+TEST(HttpClient, DISABLED_get_request_against_app_store_succeeds)
 {
     auto client = http::make_client();
 
