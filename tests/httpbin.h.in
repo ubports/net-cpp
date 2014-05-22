@@ -41,7 +41,7 @@ struct Instance
     Instance()
         : server
           {
-              core::posix::exec("/usr/bin/python", {"@CMAKE_CURRENT_BINARY_DIR@/httpbin/manage.py", "runserver"}, {}, core::posix::StandardStream::empty)
+              core::posix::exec("/usr/bin/python", {"@CMAKE_CURRENT_BINARY_DIR@/httpbin/manage.py", "runserver"}, {}, core::posix::StandardStream::stdout | core::posix::StandardStream::stderr)
           }
     {
         std::this_thread::sleep_for(std::chrono::milliseconds{500});
@@ -49,9 +49,14 @@ struct Instance
 
     ~Instance()
     {
-        std::error_code ec;
-        server.send_signal(core::posix::Signal::sig_term, ec);
-        server.wait_for(core::posix::wait::Flags::untraced | core::posix::wait::Flags::no_hang);
+        try
+        {
+            server.process_group_or_throw().send_signal_or_throw(core::posix::Signal::sig_kill);
+            server.wait_for(core::posix::wait::Flags::untraced | core::posix::wait::Flags::no_hang);
+        } catch(...)
+        {
+            // Just ignoring errors here.
+        }
     }
 
     core::posix::ChildProcess server;
