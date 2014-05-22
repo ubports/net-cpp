@@ -93,4 +93,4 @@ target_link_libraries(
 
 add_test(header_test ${CMAKE_CURRENT_BINARY_DIR}/header_test)
 add_test(http_client_test ${CMAKE_CURRENT_BINARY_DIR}/http_client_test)
-add_test(http_client_load_test ${CMAKE_CURRENT_BINARY_DIR}/http_client_test)
+add_test(http_client_load_test ${CMAKE_CURRENT_BINARY_DIR}/http_client_load_test)
