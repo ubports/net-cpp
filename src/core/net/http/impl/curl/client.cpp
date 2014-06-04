@@ -75,13 +75,18 @@ std::string http::impl::curl::Client::base64_decode(const std::string& s) const
 
     // Remove the padding characters
     // See: https://svn.boost.org/trac/boost/ticket/5629
-    if (size && s[size - 1] == '=') {
+    if (size && s[size - 1] == '=')
+    {
         --size;
         if (size && s[size - 1] == '=')
+        {
             --size;
+        }
     }
     if (size == 0)
+    {
         return std::string();
+    }
 
     std::copy(base64_dec(s.data()), base64_dec(s.data() + size),
             std::ostream_iterator<char>(os));
