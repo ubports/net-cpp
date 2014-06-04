@@ -40,6 +40,10 @@ public:
     // From core::net::http::Client
     std::string url_escape(const std::string& s) const;
 
+    std::string base64_encode(const std::string& s) const override;
+
+    std::string base64_decode(const std::string& s) const override;
+
     core::net::http::Client::Timings timings();
 
     void run();
