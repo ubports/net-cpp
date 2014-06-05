@@ -33,9 +33,7 @@ namespace bai = boost::archive::iterators;
 
 namespace
 {
-
 const std::string BASE64_PADDING[] = { "", "==", "=" };
-
 }
 
 http::impl::curl::Client::Client()
