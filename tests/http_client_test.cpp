@@ -17,6 +17,7 @@
  */
 
 #include <core/net/error.h>
+#include <core/net/uri.h>
 #include <core/net/http/client.h>
 #include <core/net/http/content_type.h>
 #include <core/net/http/request.h>
@@ -55,20 +56,22 @@ bool init()
 static const bool is_initialized = init();
 }
 
-TEST(HttpClient, build_uri)
+TEST(HttpClient, uri_to_string)
 {
     // We obtain a default client instance, dispatching to the default implementation.
     auto client = http::make_client();
 
-    EXPECT_EQ("http://baz.com", client->build_uri("http://baz.com"));
+    EXPECT_EQ("http://baz.com", client->uri_to_string(net::make_uri("http://baz.com")));
 
     EXPECT_EQ("http://foo.com/foo%20bar/baz%20boz",
-            client->build_uri("http://foo.com", { "foo bar", "baz boz" }));
+              client->uri_to_string(net::make_uri("http://foo.com",
+              { "foo bar", "baz boz" })));
 
     EXPECT_EQ(
             "http://banana.fruit/my/endpoint?hello%20there=good%20bye&happy=sad",
-            client->build_uri("http://banana.fruit", { "my", "endpoint" }, { {
-                    "hello there", "good bye" }, { "happy", "sad" } }));
+            client->uri_to_string(net::make_uri("http://banana.fruit",
+            { "my", "endpoint" },
+            { { "hello there", "good bye" }, { "happy", "sad" } })));
 }
 
 TEST(HttpClient, head_request_for_existing_resource_succeeds)
