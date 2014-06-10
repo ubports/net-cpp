@@ -52,7 +52,7 @@ std::string http::impl::curl::Client::build_uri(const std::string& base,
     // Append each of the components of the endpoint
     for (const std::string& endpoint : endpoints)
     {
-        s << "/" << endpoint;
+        s << "/" << url_escape(endpoint);
     }
 
     // Append the parameters

@@ -62,8 +62,8 @@ TEST(HttpClient, build_uri)
 
     EXPECT_EQ("http://baz.com", client->build_uri("http://baz.com"));
 
-    EXPECT_EQ("http://foo.com/bar/baz", client->build_uri("http://foo.com", {
-            "bar", "baz" }));
+    EXPECT_EQ("http://foo.com/foo%20bar/baz%20boz",
+            client->build_uri("http://foo.com", { "foo bar", "baz boz" }));
 
     EXPECT_EQ(
             "http://banana.fruit/my/endpoint?hello%20there=good%20bye&happy=sad",
