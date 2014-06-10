@@ -50,7 +50,7 @@ std::string http::impl::curl::Client::build_uri(const std::string& base,
     s << base;
 
     // Append each of the components of the endpoint
-    for (const std::string &endpoint : endpoints)
+    for (const std::string& endpoint : endpoints)
     {
         s << "/" << endpoint;
     }

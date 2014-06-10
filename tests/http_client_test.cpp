@@ -609,10 +609,10 @@ INSTANTIATE_TEST_CASE_P(Base64Fixtures, HttpClientBase64Test,
                 StringPairTestParams("bananas are tasty", "YmFuYW5hcyBhcmUgdGFzdHk=")
         ));
 
-class HttpClientUrlEncodeTest : public ::testing::TestWithParam<StringPairTestParams> {
+class HttpClientUrlEscapeTest : public ::testing::TestWithParam<StringPairTestParams> {
 };
 
-TEST_P(HttpClientUrlEncodeTest, url_escape)
+TEST_P(HttpClientUrlEscapeTest, url_escape)
 {
     // We obtain a default client instance, dispatching to the default implementation.
     auto client = http::make_client();
@@ -624,7 +624,7 @@ TEST_P(HttpClientUrlEncodeTest, url_escape)
     EXPECT_EQ(param.second, client->url_escape(param.first));
 }
 
-INSTANTIATE_TEST_CASE_P(UrlEscapeFixtures, HttpClientUrlEncodeTest,
+INSTANTIATE_TEST_CASE_P(UrlEscapeFixtures, HttpClientUrlEscapeTest,
         ::testing::Values(
                 StringPairTestParams("", ""),
                 StringPairTestParams("Hello Günter", "Hello%20G%C3%BCnter"),
