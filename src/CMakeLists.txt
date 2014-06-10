@@ -14,7 +14,7 @@
 #
 # Authored by: Thomas Voss <thomas.voss@canonical.com>
 
-find_package(Boost COMPONENTS system REQUIRED)
+find_package(Boost COMPONENTS system serialization REQUIRED)
 find_package(CURL REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS})

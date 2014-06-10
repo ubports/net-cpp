@@ -550,3 +550,45 @@ TEST(HttpClient, DISABLED_submit_of_location_on_mozillas_location_service_succee
               response.status);
 }
 
+typedef std::pair<std::string, std::string> Base64TestParams;
+
+class HttpClientBase64Test : public ::testing::TestWithParam<Base64TestParams> {
+};
+
+TEST_P(HttpClientBase64Test, encoder)
+{
+    // We obtain a default client instance, dispatching to the default implementation.
+    auto client = http::make_client();
+
+    // Get our encoding parameters
+    auto param = GetParam();
+
+    // Try the base64 encode out
+    EXPECT_EQ(param.second, client->base64_encode(param.first));
+}
+
+TEST_P(HttpClientBase64Test, decoder)
+{
+    // We obtain a default client instance, dispatching to the default implementation.
+    auto client = http::make_client();
+
+    // Get our encoding parameters
+    auto param = GetParam();
+
+    // Try the base64 decode out
+    EXPECT_EQ(param.first, client->base64_decode(param.second));
+}
+
+INSTANTIATE_TEST_CASE_P(Base64Fixtures, HttpClientBase64Test,
+        ::testing::Values(
+                Base64TestParams("", ""),
+                Base64TestParams("M", "TQ=="),
+                Base64TestParams("Ma", "TWE="),
+                Base64TestParams("Man", "TWFu"),
+                Base64TestParams("pleasure.", "cGxlYXN1cmUu"),
+                Base64TestParams("leasure.", "bGVhc3VyZS4="),
+                Base64TestParams("easure.", "ZWFzdXJlLg=="),
+                Base64TestParams("asure.", "YXN1cmUu"),
+                Base64TestParams("sure.", "c3VyZS4="),
+                Base64TestParams("bananas are tasty", "YmFuYW5hcyBhcmUgdGFzdHk=")
+        ));
