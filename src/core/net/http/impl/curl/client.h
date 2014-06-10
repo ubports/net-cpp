@@ -38,6 +38,11 @@ public:
     Client();
 
     // From core::net::http::Client
+
+    std::string build_uri(const std::string& base, const UriEndpoint& endpoint =
+            UriEndpoint(), const UriParameters& parameters = UriParameters())
+            override;
+
     std::string url_escape(const std::string& s) const;
 
     std::string base64_encode(const std::string& s) const override;

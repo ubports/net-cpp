@@ -26,6 +26,8 @@
 #include <chrono>
 #include <iosfwd>
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace core
 {
@@ -94,6 +96,17 @@ public:
 
     Client& operator=(const Client&) = delete;
     bool operator==(const Client&) const = delete;
+
+    typedef std::vector<std::string> UriEndpoint;
+
+    typedef std::vector<std::pair<std::string, std::string>> UriParameters;
+
+    /**
+     * @brief Build a URI from its components
+     */
+    virtual std::string build_uri(const std::string& base,
+            const UriEndpoint& endpoint = UriEndpoint(),
+            const UriParameters& parameters = UriParameters()) = 0;
 
     /** @brief Percent-encodes the given string. */
     virtual std::string url_escape(const std::string& s) const = 0;

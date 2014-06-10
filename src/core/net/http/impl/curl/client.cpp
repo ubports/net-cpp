@@ -41,6 +41,42 @@ http::impl::curl::Client::Client()
     multi.set_option(::curl::multi::Option::pipelining, ::curl::easy::enable);
 }
 
+std::string http::impl::curl::Client::build_uri(const std::string& base,
+        const UriEndpoint& endpoints, const UriParameters& parameters)
+{
+    std::ostringstream s;
+
+    // Start with the base of the URI
+    s << base;
+
+    // Append each of the components of the endpoint
+    for (const std::string &endpoint : endpoints)
+    {
+        s << "/" << endpoint;
+    }
+
+    // Append the parameters
+    bool first = true;
+    for (const std::pair<std::string, std::string>& parameter : parameters)
+    {
+        if (first)
+        {
+            // The first parameter needs a ?
+            s << "?";
+            first = false;
+        } else {
+            // The rest are separated with a &
+            s << "&";
+        }
+
+        // URL escape the parameters
+        s << url_escape(parameter.first) << "=" << url_escape(parameter.second);
+    }
+
+    // We're done
+    return s.str();
+}
+
 std::string http::impl::curl::Client::url_escape(const std::string& s) const
 {
     return ::curl::native::escape(s);
