@@ -1,5 +1,9 @@
 net-cpp (0.0.1-0ubuntu1) UNRELEASED; urgency=low
 
+  [ Thomas Voß ]
   * Initial release. 
+
+  [ Ubuntu daily release ]
+  * debian/*symbols: auto-update new symbols to released version
 
  -- Thomas Voß <thomas.voss@canonical.com>  Fri, 14 Mar 2014 14:18:55 +0100
