@@ -18,8 +18,6 @@
 
 #include <core/net/uri.h>
 
-#include <sstream>
-
 namespace net = core::net;
 
 net::Uri net::make_uri (const net::Uri::Base& base, const net::Uri::Endpoint& endpoint,
