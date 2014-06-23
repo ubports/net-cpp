@@ -78,7 +78,7 @@ struct Uri
  * e.g.
  * \code{.cpp}
  * std::string query = "banana";
- * core::net::make_uri("https://api.mydomain.com", {"api", "v3", "search"}, {{"query", query}})
+ * auto uri = core::net::make_uri("https://api.mydomain.com", {"api", "v3", "search"}, {{"query", query}});
  * \endcode
  *
  * When converted to a std::string with core::net::http::client::uri_to_string()
