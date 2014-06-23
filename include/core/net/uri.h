@@ -29,6 +29,10 @@ namespace core
 namespace net
 {
 
+
+/**
+ * @brief The Uri class encapsulates the components of a URI
+ */
 struct Uri
 {
     typedef std::string Base;
@@ -37,15 +41,48 @@ struct Uri
 
     typedef std::vector<std::pair<std::string, std::string>> Parameters;
 
+    /**
+     * @brief The base is the first part of the URI, including the protocol
+     *
+     * e.g.
+     * \code{.cpp}
+     * "http://www.ubuntu.com"
+     * \endcode
+     */
     Base base;
 
+    /**
+     * @brief the endpoint components
+     *
+     * e.g.
+     * \code{.cpp}
+     * {"api", "v3", "search"}
+     * \endcode
+     */
     Endpoint endpoint;
 
+    /**
+     * @brief The CGI parameters as key value pairs
+     *
+     * e.g.
+     * \code{.cpp}
+     * {{"key1", "value1"}, {"key2", "value2"}}
+     * \endcode
+     */
     Parameters parameters;
 };
 
 /**
  * @brief Build a URI from its components
+ *
+ * e.g.
+ * \code{.cpp}
+ * std::string query = "banana";
+ * core::net::make_uri("https://api.mydomain.com", {"api", "v3", "search"}, {{"query", query}})
+ * \endcode
+ *
+ * When converted to a std::string with core::net::http::client::uri_to_string()
+ * the endpoint and parameters will be URL-escaped.
  */
 CORE_NET_DLL_PUBLIC
 Uri make_uri (const Uri::Base& base, const Uri::Endpoint& endpoint = Uri::Endpoint(),
