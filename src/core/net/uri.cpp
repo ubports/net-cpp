@@ -22,8 +22,8 @@
 
 namespace net = core::net;
 
-net::Uri net::make_uri (const net::Uri::Base& base, const net::Uri::Endpoint& endpoints,
+net::Uri net::make_uri (const net::Uri::Base& base, const net::Uri::Endpoint& endpoint,
                const net::Uri::Parameters& parameters)
 {
-    return net::Uri{ base, endpoints, parameters };
+    return net::Uri{ base, endpoint, parameters };
 }
