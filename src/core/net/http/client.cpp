@@ -54,18 +54,18 @@ std::string http::Client::uri_to_string(const core::net::Uri& uri) const
 {
     std::ostringstream s;
 
-    // Start with the base of the URI
-    s << uri.base;
+    // Start with the host of the URI
+    s << uri.host;
 
-    // Append each of the components of the endpoint
-    for (const std::string& endpoint : uri.endpoint)
+    // Append each of the components of the path
+    for (const std::string& part : uri.path)
     {
-        s << "/" << url_escape(endpoint);
+        s << "/" << url_escape(part);
     }
 
     // Append the parameters
     bool first = true;
-    for (const std::pair<std::string, std::string>& parameter : uri.parameters)
+    for (const std::pair<std::string, std::string>& query_parameter : uri.query_parameters)
     {
         if (first)
         {
@@ -80,7 +80,7 @@ std::string http::Client::uri_to_string(const core::net::Uri& uri) const
         }
 
         // URL escape the parameters
-        s << url_escape(parameter.first) << "=" << url_escape(parameter.second);
+        s << url_escape(query_parameter.first) << "=" << url_escape(query_parameter.second);
     }
 
     // We're done

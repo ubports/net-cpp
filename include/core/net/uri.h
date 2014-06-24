@@ -35,41 +35,41 @@ namespace net
  */
 struct Uri
 {
-    typedef std::string Base;
+    typedef std::string Host;
 
-    typedef std::vector<std::string> Endpoint;
+    typedef std::vector<std::string> Path;
 
-    typedef std::vector<std::pair<std::string, std::string>> Parameters;
+    typedef std::vector<std::pair<std::string, std::string>> QueryParameters;
 
     /**
-     * @brief The base is the first part of the URI, including the protocol
+     * @brief The host is the first part of the URI, including the protocol
      *
      * e.g.
      * \code{.cpp}
      * "http://www.ubuntu.com"
      * \endcode
      */
-    Base base;
+    Host host;
 
     /**
-     * @brief the endpoint components
+     * @brief the path components
      *
      * e.g.
      * \code{.cpp}
      * {"api", "v3", "search"}
      * \endcode
      */
-    Endpoint endpoint;
+    Path path;
 
     /**
-     * @brief The CGI parameters as key value pairs
+     * @brief The CGI query parameters as ordered key-value pairs
      *
      * e.g.
      * \code{.cpp}
      * {{"key1", "value1"}, {"key2", "value2"}}
      * \endcode
      */
-    Parameters parameters;
+    QueryParameters query_parameters;
 };
 
 /**
@@ -85,8 +85,8 @@ struct Uri
  * the endpoint and parameters will be URL-escaped.
  */
 CORE_NET_DLL_PUBLIC
-Uri make_uri (const Uri::Base& base, const Uri::Endpoint& endpoint = Uri::Endpoint(),
-           const Uri::Parameters& parameters = Uri::Parameters());
+Uri make_uri (const Uri::Host& host, const Uri::Path& path = Uri::Path(),
+           const Uri::QueryParameters& query_parameters = Uri::QueryParameters());
 
 }
 }
