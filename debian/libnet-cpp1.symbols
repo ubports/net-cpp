@@ -1,4 +1,4 @@
-libnet-cpp.so.0 libnet-cpp0 #MINVER#
+libnet-cpp.so.1 libnet-cpp1 #MINVER#
  (c++)"core::net::http::make_client()@Base" 0.0.1+14.10.20140611
  (c++)"core::net::http::Client::Errors::HttpMethodNotSupported::HttpMethodNotSupported(core::net::http::Method, core::Location const&)@Base" 0.0.1+14.10.20140611
  (c++)"core::net::http::Client::Errors::HttpMethodNotSupported::~HttpMethodNotSupported()@Base" 0.0.1+14.10.20140611
