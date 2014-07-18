@@ -1,8 +1,9 @@
-net-cpp (1.0.0) UNRELEASED; urgency=medium
+net-cpp (1.0.0+14.10.20140718-0ubuntu1) utopic; urgency=medium
 
+  [ Thomas Voß ]
   * Bump major revision and so name to account for toolchain update. 
 
- -- Thomas Voß <thomas.voss@canonical.com>  Fri, 27 Jun 2014 10:12:47 +0200
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 18 Jul 2014 12:38:11 +0000
 
 net-cpp (0.0.1+14.10.20140611-0ubuntu1) utopic; urgency=low
 
