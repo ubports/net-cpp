@@ -92,7 +92,7 @@ TEST(HttpClient, head_request_for_existing_resource_succeeds)
     EXPECT_EQ(core::net::http::Status::ok, response.status);
 }
 
-TEST(HttpClient, a_request_can_timeout)
+TEST(HttpClient, DISABLED_a_request_can_timeout)
 {
     // We obtain a default client instance, dispatching to the default implementation.
     auto client = http::make_client();
