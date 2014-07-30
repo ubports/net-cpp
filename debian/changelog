@@ -1,4 +1,4 @@
-net-cpp (1.0.1-0ubuntu1) UNRELEASED; urgency=medium
+net-cpp (1.1.0-0ubuntu1) UNRELEASED; urgency=medium
 
   [ Pete Woods ]
   * Add Uri class and corresponding string conversion. 
