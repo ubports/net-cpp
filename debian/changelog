@@ -1,3 +1,10 @@
+net-cpp (1.1.0-0ubuntu1) UNRELEASED; urgency=medium
+
+  [ Pete Woods ]
+  * Add Uri class and corresponding string conversion. 
+
+ -- Pete Woods <pete.woods@canonical.com>  Wed, 30 Jul 2014 14:35:58 +0100
+
 net-cpp (1.0.0+14.10.20140729.1-0ubuntu1) utopic; urgency=low
 
   [ Pete Woods ]

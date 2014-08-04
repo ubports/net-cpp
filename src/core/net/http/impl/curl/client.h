@@ -38,6 +38,7 @@ public:
     Client();
 
     // From core::net::http::Client
+
     std::string url_escape(const std::string& s) const;
 
     std::string base64_encode(const std::string& s) const override;

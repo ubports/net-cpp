@@ -31,6 +31,9 @@ namespace core
 {
 namespace net
 {
+
+struct Uri;
+
 namespace http
 {
 class ContentType;
@@ -94,6 +97,8 @@ public:
 
     Client& operator=(const Client&) = delete;
     bool operator==(const Client&) const = delete;
+
+    virtual std::string uri_to_string (const core::net::Uri& uri) const;
 
     /** @brief Percent-encodes the given string. */
     virtual std::string url_escape(const std::string& s) const = 0;

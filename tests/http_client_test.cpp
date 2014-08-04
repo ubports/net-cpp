@@ -17,6 +17,7 @@
  */
 
 #include <core/net/error.h>
+#include <core/net/uri.h>
 #include <core/net/http/client.h>
 #include <core/net/http/content_type.h>
 #include <core/net/http/request.h>
@@ -53,6 +54,24 @@ bool init()
 }
 
 static const bool is_initialized = init();
+}
+
+TEST(HttpClient, uri_to_string)
+{
+    // We obtain a default client instance, dispatching to the default implementation.
+    auto client = http::make_client();
+
+    EXPECT_EQ("http://baz.com", client->uri_to_string(net::make_uri("http://baz.com")));
+
+    EXPECT_EQ("http://foo.com/foo%20bar/baz%20boz",
+              client->uri_to_string(net::make_uri("http://foo.com",
+              { "foo bar", "baz boz" })));
+
+    EXPECT_EQ(
+            "http://banana.fruit/my/endpoint?hello%20there=good%20bye&happy=sad",
+            client->uri_to_string(net::make_uri("http://banana.fruit",
+            { "my", "endpoint" },
+            { { "hello there", "good bye" }, { "happy", "sad" } })));
 }
 
 TEST(HttpClient, head_request_for_existing_resource_succeeds)
@@ -550,9 +569,9 @@ TEST(HttpClient, DISABLED_submit_of_location_on_mozillas_location_service_succee
               response.status);
 }
 
-typedef std::pair<std::string, std::string> Base64TestParams;
+typedef std::pair<std::string, std::string> StringPairTestParams;
 
-class HttpClientBase64Test : public ::testing::TestWithParam<Base64TestParams> {
+class HttpClientBase64Test : public ::testing::TestWithParam<StringPairTestParams> {
 };
 
 TEST_P(HttpClientBase64Test, encoder)
@@ -581,14 +600,37 @@ TEST_P(HttpClientBase64Test, decoder)
 
 INSTANTIATE_TEST_CASE_P(Base64Fixtures, HttpClientBase64Test,
         ::testing::Values(
-                Base64TestParams("", ""),
-                Base64TestParams("M", "TQ=="),
-                Base64TestParams("Ma", "TWE="),
-                Base64TestParams("Man", "TWFu"),
-                Base64TestParams("pleasure.", "cGxlYXN1cmUu"),
-                Base64TestParams("leasure.", "bGVhc3VyZS4="),
-                Base64TestParams("easure.", "ZWFzdXJlLg=="),
-                Base64TestParams("asure.", "YXN1cmUu"),
-                Base64TestParams("sure.", "c3VyZS4="),
-                Base64TestParams("bananas are tasty", "YmFuYW5hcyBhcmUgdGFzdHk=")
+                StringPairTestParams("", ""),
+                StringPairTestParams("M", "TQ=="),
+                StringPairTestParams("Ma", "TWE="),
+                StringPairTestParams("Man", "TWFu"),
+                StringPairTestParams("pleasure.", "cGxlYXN1cmUu"),
+                StringPairTestParams("leasure.", "bGVhc3VyZS4="),
+                StringPairTestParams("easure.", "ZWFzdXJlLg=="),
+                StringPairTestParams("asure.", "YXN1cmUu"),
+                StringPairTestParams("sure.", "c3VyZS4="),
+                StringPairTestParams("bananas are tasty", "YmFuYW5hcyBhcmUgdGFzdHk=")
+        ));
+
+class HttpClientUrlEscapeTest : public ::testing::TestWithParam<StringPairTestParams> {
+};
+
+TEST_P(HttpClientUrlEscapeTest, url_escape)
+{
+    // We obtain a default client instance, dispatching to the default implementation.
+    auto client = http::make_client();
+
+    // Get our encoding parameters
+    auto param = GetParam();
+
+    // Try the url_escape out
+    EXPECT_EQ(param.second, client->url_escape(param.first));
+}
+
+INSTANTIATE_TEST_CASE_P(UrlEscapeFixtures, HttpClientUrlEscapeTest,
+        ::testing::Values(
+                StringPairTestParams("", ""),
+                StringPairTestParams("Hello Günter", "Hello%20G%C3%BCnter"),
+                StringPairTestParams("That costs £20", "That%20costs%20%C2%A320"),
+                StringPairTestParams("Microsoft®", "Microsoft%C2%AE")
         ));

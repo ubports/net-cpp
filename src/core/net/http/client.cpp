@@ -16,8 +16,8 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
+#include <core/net/uri.h>
 #include <core/net/http/client.h>
-
 #include <core/net/http/content_type.h>
 
 #include <sstream>
@@ -48,4 +48,41 @@ std::shared_ptr<http::Request> http::Client::post_form(
     }
 
     return post(configuration, ss.str(), http::ContentType::x_www_form_urlencoded);
+}
+
+std::string http::Client::uri_to_string(const core::net::Uri& uri) const
+{
+    std::ostringstream s;
+
+    // Start with the host of the URI
+    s << uri.host;
+
+    // Append each of the components of the path
+    for (const std::string& part : uri.path)
+    {
+        s << "/" << url_escape(part);
+    }
+
+    // Append the parameters
+    bool first = true;
+    for (const std::pair<std::string, std::string>& query_parameter : uri.query_parameters)
+    {
+        if (first)
+        {
+            // The first parameter needs a ?
+            s << "?";
+            first = false;
+        }
+        else
+        {
+            // The rest are separated with a &
+            s << "&";
+        }
+
+        // URL escape the parameters
+        s << url_escape(query_parameter.first) << "=" << url_escape(query_parameter.second);
+    }
+
+    // We're done
+    return s.str();
 }
