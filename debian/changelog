@@ -1,4 +1,4 @@
-net-cpp (1.1.0-0ubuntu1) UNRELEASED; urgency=medium
+net-cpp (1.1.0+14.10.20140804-0ubuntu1) utopic; urgency=medium
 
   [ Pete Woods ]
   * Add Uri class and corresponding string conversion. 
@@ -6,7 +6,7 @@ net-cpp (1.1.0-0ubuntu1) UNRELEASED; urgency=medium
   [ Ubuntu daily release ]
   * debian/libnet-cpp1.symbols: auto-update to released version
 
- -- Pete Woods <pete.woods@canonical.com>  Wed, 30 Jul 2014 14:35:58 +0100
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 04 Aug 2014 09:41:07 +0000
 
 net-cpp (1.0.0+14.10.20140729.1-0ubuntu1) utopic; urgency=low
 
