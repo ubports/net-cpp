@@ -41,6 +41,45 @@ namespace impl
 {
 namespace curl
 {
+// See http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html
+// We expect the line to exclude \r\n.
+std::tuple<std::string, std::string> parse_header_line(const char* line, std::size_t size)
+{
+    static constexpr const char key_value_delimiter{':'};
+
+    const char* begin = line;
+    const char* end = begin + size;
+    const char* position = std::find(begin, end, key_value_delimiter);
+
+    if (position != begin && position < end)
+    {
+        // Advance until we find
+        const char* trimmed = position+1;
+        while (trimmed != end && std::isspace(*trimmed))
+            trimmed++;
+
+        return std::make_tuple(
+                    (position != begin ? std::string{begin, position} : std::string{}),
+                    (trimmed != end ? std::string{trimmed, end} : std::string{}));
+    }
+
+    return std::make_tuple(std::string{}, std::string{});
+}
+
+std::tuple<std::string, std::string, std::size_t> handle_header_line(void* data, std::size_t size, std::size_t nmemb)
+{
+    std::size_t length = size * nmemb;
+
+    // Either an empty line only containing \r\n or
+    // an invalid header line. We bail out in both cases.
+    if (length <= 2)
+        return std::tuple_cat(std::make_tuple(std::string{}, std::string{}), std::make_tuple(length));
+
+    return std::tuple_cat(parse_header_line(static_cast<const char*>(data), length-2), std::make_tuple(length));
+}
+
+
+
 // Make sure that we switch the state back to idle whenever an instance
 // of StateGuard goes out of scope.
 struct StateGuard
@@ -130,23 +169,16 @@ public:
         easy.on_write_header(
                     [&](void* data, std::size_t size, std::size_t nmemb)
                     {
-                        const char* begin = static_cast<const char*>(data);
-                        const char* end = begin + size*nmemb;
-                        auto position = std::find(begin, end, ':');
+                        static constexpr const std::size_t key_index{0};
+                        static constexpr const std::size_t value_index{1};
+                        static constexpr const std::size_t size_index{2};
 
-                        if (position != begin && position < end)
-                        {
-                            auto trimmed = position+1;
+                        auto kvs = handle_header_line(data, size, nmemb);
 
-                            while (trimmed != end && std::isspace(*trimmed))
-                                trimmed++;
+                        if (not std::get<key_index>(kvs).empty())
+                            context.result.header.add(std::get<key_index>(kvs), std::get<value_index>(kvs));
 
-                            context.result.header.add(
-                                        std::string{begin, position},
-                                        std::string{trimmed, end-2});
-                        }
-
-                        return size * nmemb;
+                        return std::get<size_index>(kvs);
                     });
 
         try
@@ -226,18 +258,16 @@ public:
         easy.on_write_header(
                     [context](void* data, std::size_t size, std::size_t nmemb)
                     {
-                        const char* begin = static_cast<const char*>(data);
-                        const char* end = begin + size*nmemb;
-                        auto position = std::find(begin, end, ':');
+                        static constexpr const std::size_t key_index{0};
+                        static constexpr const std::size_t value_index{1};
+                        static constexpr const std::size_t size_index{2};
 
-                        if (position != begin && position < end)
-                        {
-                            context->result.header.add(
-                                        std::string{begin, position},
-                                        std::string{position+1, end});
-                        }
+                        auto kvs = handle_header_line(data, size, nmemb);
 
-                        return size * nmemb;
+                        if (not std::get<key_index>(kvs).empty())
+                            context->result.header.add(std::get<key_index>(kvs), std::get<value_index>(kvs));
+
+                        return std::get<size_index>(kvs);
                     });
 
         multi.add(easy);
