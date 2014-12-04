@@ -1,8 +1,15 @@
-net-cpp (1.1.0+14.10.20140804-0ubuntu2) UNRELEASED; urgency=low
+net-cpp (1.1.0+15.04.20141204-0ubuntu1) vivid; urgency=low
 
+  [ Ubuntu daily release ]
   * debian/libnet-cpp1.symbols: auto-update to released version
+  * New rebuild forced
 
- -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 04 Dec 2014 20:54:26 +0000
+  [ thomas-voss ]
+  * Robustify header line parser against empty values in header lines.
+    Add test case to verify that empty header value handling is correct.
+    (LP: #1392315)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 04 Dec 2014 20:54:29 +0000
 
 net-cpp (1.1.0+14.10.20140804-0ubuntu1) utopic; urgency=medium
 
