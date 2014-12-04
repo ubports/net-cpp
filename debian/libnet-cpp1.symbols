@@ -14,8 +14,8 @@ libnet-cpp.so.1 libnet-cpp1 #MINVER#
  (c++)"core::net::http::Request::Credentials::~Credentials()@Base" 0.0.1+14.10.20140611
  (c++)"core::net::http::Request::Errors::AlreadyActive::AlreadyActive(core::Location const&)@Base" 0.0.1+14.10.20140611
  (c++)"core::net::http::Request::Errors::AlreadyActive::~AlreadyActive()@Base" 0.0.1+14.10.20140611
- (c++)"core::net::http::Request::Handler::Handler(core::net::http::Request::Handler const&)@Base" 0replaceme
- (c++)"core::net::http::Request::Handler::~Handler()@Base" 0replaceme
+ (c++)"core::net::http::Request::Handler::Handler(core::net::http::Request::Handler const&)@Base" 1.1.0+15.04.20141204
+ (c++)"core::net::http::Request::Handler::~Handler()@Base" 1.1.0+15.04.20141204
  (c++)"core::net::http::Request::Handler::on_progress(std::function<core::net::http::Request::Progress::Next (core::net::http::Request::Progress const&)> const&)@Base" 0.0.1+14.10.20140611
  (c++)"core::net::http::Request::Handler::on_response(std::function<void (core::net::http::Response const&)> const&)@Base" 0.0.1+14.10.20140611
  (c++)"core::net::http::Request::Handler::on_error(std::function<void (core::net::Error const&)> const&)@Base" 0.0.1+14.10.20140611
