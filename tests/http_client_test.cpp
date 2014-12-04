@@ -189,6 +189,37 @@ TEST(HttpClient, get_request_with_custom_headers_for_existing_resource_succeeds)
     EXPECT_EQ("43", headers["Test2"].asString());
 }
 
+TEST(HttpClient, empty_header_values_are_handled_correctly)
+{
+    // We obtain a default client instance, dispatching to the default implementation.
+    auto client = http::make_client();
+
+    // Url pointing to the resource we would like to access via http.
+    auto url = std::string(httpbin::host) + httpbin::resources::headers();
+
+    // The client mostly acts as a factory for http requests.
+    auto configuration = http::Request::Configuration::from_uri_as_string(url);
+    configuration.header.set("Empty", std::string{});
+
+    auto request = client->get(configuration);
+
+    // All endpoint data on httpbin.org is JSON encoded.
+    json::Value root;
+    json::Reader reader;
+
+    // We finally execute the query synchronously and story the response.
+    auto response = request->execute(default_progress_reporter);
+
+    // We expect the query to complete successfully
+    EXPECT_EQ(core::net::http::Status::ok, response.status);
+
+    // Parsing the body of the response as JSON should succeed.
+    EXPECT_TRUE(reader.parse(response.body, root));
+
+    auto headers = root["headers"];
+    EXPECT_EQ(std::string{}, headers["Empty"].asString());
+}
+
 TEST(HttpClient, get_request_for_existing_resource_guarded_by_basic_auth_succeeds)
 {
     // We obtain a default client instance, dispatching to the default implementation.

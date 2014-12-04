@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <atomic>
 #include <iostream>
+#include <regex>
 #include <sstream>
 
 namespace core
@@ -37,10 +38,30 @@ namespace net
 {
 namespace http
 {
+// A regex for parsing key,value pairs from an http header line.
+std::regex header_line{"\\s*(\\S*)\\s*:\\s*(\\S*)\\s*"};
 namespace impl
 {
 namespace curl
 {
+
+// See http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html
+std::tuple<std::string, std::string> parse_header_line(const char* line, std::size_t size)
+{
+    std::cmatch matches;
+
+    if (not std::regex_match(line, line + size, matches, http::header_line))
+        return std::make_tuple(std::string{}, std::string{});
+
+    return std::make_tuple(matches.str(0), matches.str(1));
+}
+
+std::tuple<std::string, std::string, std::size_t> handle_header_line(void* data, std::size_t size, std::size_t nmemb)
+{
+    std::size_t length = size * nmemb;
+    return std::tuple_cat(parse_header_line(static_cast<const char*>(data), length), std::make_tuple(length));
+}
+
 // Make sure that we switch the state back to idle whenever an instance
 // of StateGuard goes out of scope.
 struct StateGuard
@@ -130,23 +151,16 @@ public:
         easy.on_write_header(
                     [&](void* data, std::size_t size, std::size_t nmemb)
                     {
-                        const char* begin = static_cast<const char*>(data);
-                        const char* end = begin + size*nmemb;
-                        auto position = std::find(begin, end, ':');
+                        static constexpr const std::size_t key_index{0};
+                        static constexpr const std::size_t value_index{1};
+                        static constexpr const std::size_t size_index{2};
 
-                        if (position != begin && position < end)
-                        {
-                            auto trimmed = position+1;
+                        auto kvs = handle_header_line(data, size, nmemb);
 
-                            while (trimmed != end && std::isspace(*trimmed))
-                                trimmed++;
+                        if (not std::get<key_index>(kvs).empty())
+                            context.result.header.add(std::get<key_index>(kvs), std::get<value_index>(kvs));
 
-                            context.result.header.add(
-                                        std::string{begin, position},
-                                        std::string{trimmed, end-2});
-                        }
-
-                        return size * nmemb;
+                        return std::get<size_index>(kvs);
                     });
 
         try
@@ -226,18 +240,16 @@ public:
         easy.on_write_header(
                     [context](void* data, std::size_t size, std::size_t nmemb)
                     {
-                        const char* begin = static_cast<const char*>(data);
-                        const char* end = begin + size*nmemb;
-                        auto position = std::find(begin, end, ':');
+                        static constexpr const std::size_t key_index{0};
+                        static constexpr const std::size_t value_index{1};
+                        static constexpr const std::size_t size_index{2};
 
-                        if (position != begin && position < end)
-                        {
-                            context->result.header.add(
-                                        std::string{begin, position},
-                                        std::string{position+1, end});
-                        }
+                        auto kvs = handle_header_line(data, size, nmemb);
 
-                        return size * nmemb;
+                        if (not std::get<key_index>(kvs).empty())
+                            context->result.header.add(std::get<key_index>(kvs), std::get<value_index>(kvs));
+
+                        return std::get<size_index>(kvs);
                     });
 
         multi.add(easy);
