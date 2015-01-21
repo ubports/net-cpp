@@ -109,7 +109,7 @@ public:
         if (atomic_state.load() != core::net::http::Request::State::ready)
             throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
 
-        easy.set_option(::curl::Option::timeout_ms, timeout.count());
+        easy.set_option(::curl::Option::timeout_ms, static_cast<long>(timeout.count()));
     }
 
     Response execute(const Request::ProgressHandler& ph)
