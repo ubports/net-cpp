@@ -1,3 +1,13 @@
+net-cpp (1.1.0+15.04.20150123-0ubuntu1) vivid; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Marcus Tomlinson ]
+  * Explicitly cast milliseconds::count() to long.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 23 Jan 2015 10:17:07 +0000
+
 net-cpp (1.1.0+15.04.20141204-0ubuntu1) vivid; urgency=low
 
   [ Ubuntu daily release ]
