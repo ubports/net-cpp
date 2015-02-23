@@ -169,7 +169,7 @@ struct multi::Handle::Private
             void cancel();
 
             void async_wait_for(
-                    const std::shared_ptr<multi::Handle::Private>& context,
+                    const std::weak_ptr<multi::Handle::Private>& context,
                     const std::chrono::milliseconds& ms);
 
             void handle_timeout(const std::shared_ptr<multi::Handle::Private>& context);
@@ -192,8 +192,8 @@ struct multi::Handle::Private
                multi::native::Socket native);
         ~Socket();
 
-        void async_wait_for_readable(const std::shared_ptr<Handle::Private>& context);
-        void async_wait_for_writeable(const std::shared_ptr<Handle::Private>& context);
+        void async_wait_for_readable(const std::weak_ptr<Handle::Private>& context);
+        void async_wait_for_writeable(const std::weak_ptr<Handle::Private>& context);
 
         struct Private : public std::enable_shared_from_this<Private>
         {
@@ -202,8 +202,8 @@ struct multi::Handle::Private
             ~Private();
 
             void cancel();
-            void async_wait_for_readable(const std::shared_ptr<Handle::Private>& context);
-            void async_wait_for_writeable(std::shared_ptr<Handle::Private> context);
+            void async_wait_for_readable(const std::weak_ptr<Handle::Private>& context);
+            void async_wait_for_writeable(std::weak_ptr<Handle::Private> context);
 
             bool cancel_requested;
             boost::asio::posix::stream_descriptor sd;
@@ -252,16 +252,21 @@ struct multi::Handle::Private
         Accumulator for_start_transfer{};
         Accumulator for_total{};
     } accumulator;
+
+    struct Holder
+    {
+        std::weak_ptr<Private> value;
+    } holder;
 };
 
 multi::Handle::Handle() : d(new Private())
 {
-    auto holder = new Holder<Private>{d};
+    d->holder.value = d;
 
     set_option(Option::socket_function, Private::socket_callback);
-    set_option(Option::socket_data, holder);
+    set_option(Option::socket_data, &d->holder);
     set_option(Option::timer_function, Private::timer_callback);
-    set_option(Option::timer_data, holder);
+    set_option(Option::timer_data, &d->holder);
 
     set_option(Option::pipelining, easy::enable);
 }
@@ -375,7 +380,7 @@ void multi::Handle::Private::Timeout::Private::cancel()
     timer.cancel();
 }
 
-void multi::Handle::Private::Timeout::Private::async_wait_for(const std::shared_ptr<Handle::Private>& context, const std::chrono::milliseconds& ms)
+void multi::Handle::Private::Timeout::Private::async_wait_for(const std::weak_ptr<Handle::Private>& context, const std::chrono::milliseconds& ms)
 {
     if (ms.count() > 0)
     {
@@ -386,12 +391,20 @@ void multi::Handle::Private::Timeout::Private::async_wait_for(const std::shared_
             if (ec)
                 return;
 
-            std::lock_guard<std::mutex> lg(context->guard);
-            handle_timeout(context);
+            auto sp = context.lock();
+            if (not sp)
+                return;
+
+            std::lock_guard<std::mutex> lg(sp->guard);
+            handle_timeout(sp);
         });
     } else if (ms.count() == 0)
     {
-        handle_timeout(context);
+        auto sp = context.lock();
+        if (not sp)
+            return;
+
+        handle_timeout(sp);
     }
 }
 
@@ -411,12 +424,12 @@ int multi::Handle::Private::timer_callback(
     if (timeout_ms < 0)
         return -1;
 
-    auto holder = static_cast<Holder<Private>*>(cookie);
+    auto holder = static_cast<Private::Holder*>(cookie);
 
     if (!holder)
         return 0;
 
-    auto thiz = holder->value;
+    auto thiz = holder->value.lock();
 
     thiz->timeout.async_wait_for(thiz, std::chrono::milliseconds{timeout_ms});
 
@@ -434,12 +447,12 @@ multi::Handle::Private::Socket::~Socket()
     d->cancel();
 }
 
-void multi::Handle::Private::Socket::async_wait_for_readable(const std::shared_ptr<multi::Handle::Private>& context)
+void multi::Handle::Private::Socket::async_wait_for_readable(const std::weak_ptr<multi::Handle::Private>& context)
 {
     d->async_wait_for_readable(context);
 }
 
-void multi::Handle::Private::Socket::async_wait_for_writeable(const std::shared_ptr<multi::Handle::Private>& context)
+void multi::Handle::Private::Socket::async_wait_for_writeable(const std::weak_ptr<multi::Handle::Private>& context)
 {
     d->async_wait_for_writeable(context);
 }
@@ -462,7 +475,7 @@ void multi::Handle::Private::Socket::Socket::Private::cancel()
     sd.release();
 }
 
-void multi::Handle::Private::Socket::Socket::Private::async_wait_for_readable(const std::shared_ptr<multi::Handle::Private>& context)
+void multi::Handle::Private::Socket::Socket::Private::async_wait_for_readable(const std::weak_ptr<multi::Handle::Private>& context)
 {
     auto self(shared_from_this());
     sd.async_read_some(boost::asio::null_buffers{}, [this, self, context](const boost::system::error_code& ec, std::size_t)
@@ -473,8 +486,13 @@ void multi::Handle::Private::Socket::Socket::Private::async_wait_for_readable(co
         if (cancel_requested)
             return;
 
+        auto sp = context.lock();
+
+        if (not sp)
+            return;
+
         {
-            std::lock_guard<std::mutex> lg(context->guard);
+            std::lock_guard<std::mutex> lg(sp->guard);
 
             int bitmask{0};
 
@@ -483,13 +501,13 @@ void multi::Handle::Private::Socket::Socket::Private::async_wait_for_readable(co
             else
                 bitmask = CURL_CSELECT_IN;
 
-            auto result = multi::native::socket_action(context->handle, sd.native_handle(), bitmask);
+            auto result = multi::native::socket_action(sp->handle, sd.native_handle(), bitmask);
             multi::throw_if_not<multi::Code::ok>(result.first);
 
-            context->process_multi_info();
+            sp->process_multi_info();
 
             if (result.second <= 0)
-                context->timeout.cancel();
+                sp->timeout.cancel();
         }
 
         // Restart
@@ -498,7 +516,7 @@ void multi::Handle::Private::Socket::Socket::Private::async_wait_for_readable(co
 }
 
 void multi::Handle::Private::Socket::Socket::Private::async_wait_for_writeable(
-        std::shared_ptr<multi::Handle::Private> context)
+        std::weak_ptr<multi::Handle::Private> context)
 {
     auto self(shared_from_this());
     sd.async_write_some(boost::asio::null_buffers{}, [this, self, context](const boost::system::error_code& ec, std::size_t)
@@ -509,8 +527,13 @@ void multi::Handle::Private::Socket::Socket::Private::async_wait_for_writeable(
         if (cancel_requested)
             return;
 
+        auto sp = context.lock();
+
+        if (not sp)
+            return;
+
         {
-            std::lock_guard<std::mutex> lg(context->guard);
+            std::lock_guard<std::mutex> lg(sp->guard);
 
             int bitmask{0};
 
@@ -519,13 +542,13 @@ void multi::Handle::Private::Socket::Socket::Private::async_wait_for_writeable(
             else
                 bitmask = CURL_CSELECT_OUT;
 
-            auto result = multi::native::socket_action(context->handle, sd.native_handle(), bitmask);
+            auto result = multi::native::socket_action(sp->handle, sd.native_handle(), bitmask);
             multi::throw_if_not<multi::Code::ok>(result.first);
 
-            context->process_multi_info();
+            sp->process_multi_info();
 
             if (result.second <= 0)
-                context->timeout.cancel();
+                sp->timeout.cancel();
         }
         // Restart
         async_wait_for_writeable(context);
@@ -541,12 +564,12 @@ int multi::Handle::Private::socket_callback(
 {
     static const int doc_tells_we_must_return_0{0};
 
-    auto holder = static_cast<Holder<Private>*>(cookie);
+    auto holder = static_cast<Private::Holder*>(cookie);
 
     if (!holder)
         return doc_tells_we_must_return_0;
 
-    auto thiz = holder->value;
+    auto thiz = holder->value.lock();
     auto socket = static_cast<Socket*>(socket_cookie);
 
     if (!socket)
