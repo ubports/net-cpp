@@ -37,12 +37,12 @@ struct Init
 {
     Init()
     {
-        curl::easy::throw_if_not<curl::Code::ok>(curl::native::init());
+        curl::easy::throw_if_not<curl::Code::ok>(curl::easy::native::global::init());
     }
 
     ~Init()
     {
-        curl::native::cleanup();
+        curl::easy::native::global::cleanup();
     }
 } init;
 }
@@ -64,12 +64,12 @@ std::string curl::native::escape(const std::string& in)
     return result;
 }
 
-::curl::Code curl::native::init()
+::curl::Code curl::easy::native::global::init()
 {
     return static_cast<::curl::Code>(curl_global_init(CURL_GLOBAL_DEFAULT));
 }
 
-void curl::native::cleanup()
+void curl::easy::native::global::cleanup()
 {
     curl_global_cleanup();
 }
@@ -146,8 +146,6 @@ struct easy::Handle::Private
 
     std::shared_ptr<CURL> handle;
 
-    shared::Handle shared;
-
     easy::Handle::OnFinished on_finished_cb;
     easy::Handle::OnProgress on_progress;
     easy::Handle::OnReadData on_read_data_cb;
@@ -221,7 +219,6 @@ easy::Handle::HandleHasBeenAbandoned::HandleHasBeenAbandoned()
 easy::Handle::Handle() : d(new Private())
 {
     set_option(Option::http_auth, CURLAUTH_ANY);
-    set_option(Option::sharing, d->shared.native());
     set_option(Option::ssl_engine_default, easy::enable);
 
     set_option(Option::no_signal, easy::enable);

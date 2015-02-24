@@ -190,7 +190,16 @@ inline void throw_if_not(Code code)
 // All curl native types and functions go here.
 namespace native
 {
-// An opaque handle to a curl multi instance.
+// Global init/cleanup
+namespace global
+{
+// Globally initializes curl.
+Code init();
+// Globally cleans up everything curl.
+void cleanup();
+}
+
+// An opaque handle to a curl easy instance.
 typedef CURL* Handle;
 
 // Creates and initializes a new native easy instance.
