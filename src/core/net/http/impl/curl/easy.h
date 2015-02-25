@@ -289,7 +289,7 @@ public:
     template<typename T>
     inline void set_option(Option option, T value)
     {
-        throw_if_not<Code::ok>(native::set(native(), option, value));
+        throw_if_not<Code::ok>(native::set(native(), option, value), [this]() {return error();});
     }
 
     // Adjusts the url that the instance should download.
@@ -337,6 +337,9 @@ private:
     static std::size_t read_data_cb(void* data, std::size_t size, std::size_t nmemb, void *cookie);
     static std::size_t write_data_cb(char* data, size_t size, size_t nmemb, void* cookie);
     static std::size_t write_header_cb(void* data, size_t size, size_t nmemb, void* cookie);
+
+    // Returns the current error description.
+    std::string error() const;
 
     struct Private;
     std::shared_ptr<Private> d;

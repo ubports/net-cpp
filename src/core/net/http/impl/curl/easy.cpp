@@ -450,3 +450,8 @@ void easy::Handle::notify_finished(curl::Code code)
     if (d->on_finished_cb)
         d->on_finished_cb(code);
 }
+
+std::string easy::Handle::error() const
+{
+    return std::string{d->error};
+}
