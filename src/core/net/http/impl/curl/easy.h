@@ -106,6 +106,7 @@ enum class Info
 
 enum class Option
 {
+    error_buffer = CURLOPT_ERRORBUFFER,
     cache_dns_timeout = CURLOPT_DNS_CACHE_TIMEOUT,
     header_function = CURLOPT_HEADERFUNCTION,
     header_data = CURLOPT_HEADERDATA,
@@ -163,28 +164,25 @@ constexpr static const long enable = 1;
 // Constant for enabling automatic SSL host verification.
 constexpr static const long enable_ssl_host_verification = 2;
 
+// Returns a human-readable description of the error code.
+std::string print_error(Code code);
+
 // Throws a std::runtime_error if the parameter to the function does match the
 // constant templated value.
 template<Code ref>
-inline void throw_if(Code code)
+inline void throw_if(Code code, const std::function<std::string()>& descriptor = std::function<std::string()>())
 {
     if (code == ref)
-    {
-        std::stringstream ss; ss << code;
-        throw std::system_error(static_cast<int>(code), std::generic_category(), ss.str());
-    }
+        throw std::runtime_error(print_error(code) + (descriptor ? ": " + descriptor() : ""));
 }
 
 // Throws a std::runtime_error if the parameter to the function does not match the
 // constant templated value.
 template<Code ref>
-inline void throw_if_not(Code code)
+inline void throw_if_not(Code code, const std::function<std::string()>& descriptor = std::function<std::string()>())
 {
     if (code != ref)
-    {
-        std::stringstream ss; ss << code;
-        throw std::system_error(static_cast<int>(code), std::generic_category(), ss.str());
-    }
+        throw std::runtime_error(print_error(code) + (descriptor ? ": " + descriptor() : ""));
 }
 
 // All curl native types and functions go here.

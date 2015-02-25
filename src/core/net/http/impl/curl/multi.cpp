@@ -384,19 +384,21 @@ void multi::Handle::Private::Timeout::Private::async_wait_for(const std::weak_pt
 {
     if (ms.count() > 0)
     {
-        auto self(shared_from_this());
+        std::weak_ptr<Private> self{shared_from_this()};
         timer.expires_from_now(boost::posix_time::milliseconds{ms.count()});
-        timer.async_wait([this, self, context](const boost::system::error_code& ec)
+        timer.async_wait([self, context](const boost::system::error_code& ec)
         {
             if (ec)
                 return;
 
-            auto sp = context.lock();
-            if (not sp)
-                return;
-
-            std::lock_guard<std::mutex> lg(sp->guard);
-            handle_timeout(sp);
+            if (auto spc = context.lock())
+            {
+                if (auto sp = self.lock())
+                {
+                    std::lock_guard<std::mutex> lg(spc->guard);
+                    sp->handle_timeout(spc);
+                }
+            }
         });
     } else if (ms.count() == 0)
     {
@@ -477,41 +479,40 @@ void multi::Handle::Private::Socket::Socket::Private::cancel()
 
 void multi::Handle::Private::Socket::Socket::Private::async_wait_for_readable(const std::weak_ptr<multi::Handle::Private>& context)
 {
-    auto self(shared_from_this());
-    sd.async_read_some(boost::asio::null_buffers{}, [this, self, context](const boost::system::error_code& ec, std::size_t)
+    std::weak_ptr<Private> self{shared_from_this()};
+    sd.async_read_some(boost::asio::null_buffers{}, [self, context](const boost::system::error_code& ec, std::size_t)
     {
         if (ec == boost::asio::error::operation_aborted)
             return;
 
-        if (cancel_requested)
-            return;
-
-        auto sp = context.lock();
-
-        if (not sp)
-            return;
-
+        if (auto sp = self.lock())
         {
-            std::lock_guard<std::mutex> lg(sp->guard);
+            if (sp->cancel_requested)
+                return;
 
-            int bitmask{0};
+            if (auto spc = context.lock())
+            {
+                std::lock_guard<std::mutex> lg(spc->guard);
 
-            if (ec)
-                bitmask = CURL_CSELECT_ERR;
-            else
-                bitmask = CURL_CSELECT_IN;
+                int bitmask{0};
 
-            auto result = multi::native::socket_action(sp->handle, sd.native_handle(), bitmask);
-            multi::throw_if_not<multi::Code::ok>(result.first);
+                if (ec)
+                    bitmask = CURL_CSELECT_ERR;
+                else
+                    bitmask = CURL_CSELECT_IN;
 
-            sp->process_multi_info();
+                auto result = multi::native::socket_action(spc->handle, sp->sd.native_handle(), bitmask);
+                multi::throw_if_not<multi::Code::ok>(result.first);
 
-            if (result.second <= 0)
-                sp->timeout.cancel();
+                spc->process_multi_info();
+
+                if (result.second <= 0)
+                    spc->timeout.cancel();
+
+                // Restart
+                sp->async_wait_for_readable(context);
+            }
         }
-
-        // Restart
-        async_wait_for_readable(context);
     });
 }
 

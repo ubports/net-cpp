@@ -74,6 +74,11 @@ void curl::easy::native::global::cleanup()
     curl_global_cleanup();
 }
 
+std::string easy::print_error(curl::Code code)
+{
+    return std::string{curl_easy_strerror(static_cast<CURLcode>(code))};
+}
+
 easy::native::Handle easy::native::init()
 {
     return curl_easy_init();
@@ -153,6 +158,7 @@ struct easy::Handle::Private
     easy::Handle::OnWriteHeader on_write_header_cb;
 
     ::curl::StringList* header_string_list;
+    char error[CURL_ERROR_SIZE];
 };
 
 int easy::Handle::progress_cb(void* data, double dltotal, double dlnow, double ultotal, double ulnow)
@@ -220,7 +226,7 @@ easy::Handle::Handle() : d(new Private())
 {
     set_option(Option::http_auth, CURLAUTH_ANY);
     set_option(Option::ssl_engine_default, easy::enable);
-
+    set_option(Option::error_buffer, d->error);
     set_option(Option::no_signal, easy::enable);
 }
 
@@ -420,7 +426,7 @@ easy::native::Handle easy::Handle::native() const
 void easy::Handle::perform()
 {
     if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
-    throw_if_not<curl::Code::ok>(easy::native::perform(native()));
+    throw_if_not<curl::Code::ok>(easy::native::perform(native()), [this]() { return std::string{d->error};});
 }
 
 // URL escapes the given input string.
