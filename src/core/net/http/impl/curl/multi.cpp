@@ -519,40 +519,39 @@ void multi::Handle::Private::Socket::Socket::Private::async_wait_for_readable(co
 void multi::Handle::Private::Socket::Socket::Private::async_wait_for_writeable(
         std::weak_ptr<multi::Handle::Private> context)
 {
-    auto self(shared_from_this());
-    sd.async_write_some(boost::asio::null_buffers{}, [this, self, context](const boost::system::error_code& ec, std::size_t)
+    std::weak_ptr<Private> self(shared_from_this());
+    sd.async_write_some(boost::asio::null_buffers{}, [self, context](const boost::system::error_code& ec, std::size_t)
     {
         if (ec == boost::asio::error::operation_aborted)
             return;
 
-        if (cancel_requested)
-            return;
-
-        auto sp = context.lock();
-
-        if (not sp)
-            return;
-
+        if (auto sp = self.lock())
         {
-            std::lock_guard<std::mutex> lg(sp->guard);
+            if (sp->cancel_requested)
+                return;
 
-            int bitmask{0};
+            if (auto spc = context.lock())
+            {
+                std::lock_guard<std::mutex> lg(spc->guard);
 
-            if (ec)
-                bitmask = CURL_CSELECT_ERR;
-            else
-                bitmask = CURL_CSELECT_OUT;
+                int bitmask{0};
 
-            auto result = multi::native::socket_action(sp->handle, sd.native_handle(), bitmask);
-            multi::throw_if_not<multi::Code::ok>(result.first);
+                if (ec)
+                    bitmask = CURL_CSELECT_ERR;
+                else
+                    bitmask = CURL_CSELECT_OUT;
 
-            sp->process_multi_info();
+                auto result = multi::native::socket_action(spc->handle, sp->sd.native_handle(), bitmask);
+                multi::throw_if_not<multi::Code::ok>(result.first);
 
-            if (result.second <= 0)
-                sp->timeout.cancel();
+                spc->process_multi_info();
+
+                if (result.second <= 0)
+                    spc->timeout.cancel();
+            }
+            // Restart
+            sp->async_wait_for_writeable(context);
         }
-        // Restart
-        async_wait_for_writeable(context);
     });
 }
 
