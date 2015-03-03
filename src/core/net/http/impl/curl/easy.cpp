@@ -20,6 +20,8 @@
 
 #include "shared.h"
 
+#include <cassert>
+
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -225,8 +227,8 @@ easy::Handle::HandleHasBeenAbandoned::HandleHasBeenAbandoned()
 easy::Handle::Handle() : d(new Private())
 {
     set_option(Option::http_auth, CURLAUTH_ANY);
-    set_option(Option::ssl_engine_default, easy::enable);
     set_option(Option::error_buffer, d->error);
+    set_option(Option::ssl_engine_default, easy::enable);
     set_option(Option::no_signal, easy::enable);
 }
 

@@ -289,7 +289,23 @@ public:
     template<typename T>
     inline void set_option(Option option, T value)
     {
-        throw_if_not<Code::ok>(native::set(native(), option, value), [this]() {return error();});
+        switch (option)
+        {
+        case Option::ssl_engine_default:
+            throw_if_not<Code::ok>(native::set(native(), option, value), []()
+            {
+                return "We failed to setup the default SSL engine for CURL.\n"
+                       "This likely hints towards a broken CURL implementation.\n"
+                       "Please make sure that all the build-dependencies of the software are installed.\n";
+            });
+            break;
+        default:
+            throw_if_not<Code::ok>(native::set(native(), option, value), [this]()
+            {
+                return error();
+            });
+            break;
+        }
     }
 
     // Adjusts the url that the instance should download.
