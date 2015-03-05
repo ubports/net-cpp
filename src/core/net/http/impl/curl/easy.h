@@ -106,6 +106,7 @@ enum class Info
 
 enum class Option
 {
+    error_buffer = CURLOPT_ERRORBUFFER,
     cache_dns_timeout = CURLOPT_DNS_CACHE_TIMEOUT,
     header_function = CURLOPT_HEADERFUNCTION,
     header_data = CURLOPT_HEADERDATA,
@@ -163,34 +164,40 @@ constexpr static const long enable = 1;
 // Constant for enabling automatic SSL host verification.
 constexpr static const long enable_ssl_host_verification = 2;
 
+// Returns a human-readable description of the error code.
+std::string print_error(Code code);
+
 // Throws a std::runtime_error if the parameter to the function does match the
 // constant templated value.
 template<Code ref>
-inline void throw_if(Code code)
+inline void throw_if(Code code, const std::function<std::string()>& descriptor = std::function<std::string()>())
 {
     if (code == ref)
-    {
-        std::stringstream ss; ss << code;
-        throw std::system_error(static_cast<int>(code), std::generic_category(), ss.str());
-    }
+        throw std::runtime_error(print_error(code) + (descriptor ? ": " + descriptor() : ""));
 }
 
 // Throws a std::runtime_error if the parameter to the function does not match the
 // constant templated value.
 template<Code ref>
-inline void throw_if_not(Code code)
+inline void throw_if_not(Code code, const std::function<std::string()>& descriptor = std::function<std::string()>())
 {
     if (code != ref)
-    {
-        std::stringstream ss; ss << code;
-        throw std::system_error(static_cast<int>(code), std::generic_category(), ss.str());
-    }
+        throw std::runtime_error(print_error(code) + (descriptor ? ": " + descriptor() : ""));
 }
 
 // All curl native types and functions go here.
 namespace native
 {
-// An opaque handle to a curl multi instance.
+// Global init/cleanup
+namespace global
+{
+// Globally initializes curl.
+Code init();
+// Globally cleans up everything curl.
+void cleanup();
+}
+
+// An opaque handle to a curl easy instance.
 typedef CURL* Handle;
 
 // Creates and initializes a new native easy instance.
@@ -282,7 +289,23 @@ public:
     template<typename T>
     inline void set_option(Option option, T value)
     {
-        throw_if_not<Code::ok>(native::set(native(), option, value));
+        switch (option)
+        {
+        case Option::ssl_engine_default:
+            throw_if_not<Code::ok>(native::set(native(), option, value), []()
+            {
+                return "We failed to setup the default SSL engine for CURL.\n"
+                       "This likely hints towards a broken CURL implementation.\n"
+                       "Please make sure that all the build-dependencies of the software are installed.\n";
+            });
+            break;
+        default:
+            throw_if_not<Code::ok>(native::set(native(), option, value), [this]()
+            {
+                return error();
+            });
+            break;
+        }
     }
 
     // Adjusts the url that the instance should download.
@@ -330,6 +353,9 @@ private:
     static std::size_t read_data_cb(void* data, std::size_t size, std::size_t nmemb, void *cookie);
     static std::size_t write_data_cb(char* data, size_t size, size_t nmemb, void* cookie);
     static std::size_t write_header_cb(void* data, size_t size, size_t nmemb, void* cookie);
+
+    // Returns the current error description.
+    std::string error() const;
 
     struct Private;
     std::shared_ptr<Private> d;

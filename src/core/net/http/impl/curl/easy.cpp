@@ -20,6 +20,8 @@
 
 #include "shared.h"
 
+#include <cassert>
+
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -37,12 +39,12 @@ struct Init
 {
     Init()
     {
-        curl::easy::throw_if_not<curl::Code::ok>(curl::native::init());
+        curl::easy::throw_if_not<curl::Code::ok>(curl::easy::native::global::init());
     }
 
     ~Init()
     {
-        curl::native::cleanup();
+        curl::easy::native::global::cleanup();
     }
 } init;
 }
@@ -64,14 +66,19 @@ std::string curl::native::escape(const std::string& in)
     return result;
 }
 
-::curl::Code curl::native::init()
+::curl::Code curl::easy::native::global::init()
 {
     return static_cast<::curl::Code>(curl_global_init(CURL_GLOBAL_DEFAULT));
 }
 
-void curl::native::cleanup()
+void curl::easy::native::global::cleanup()
 {
     curl_global_cleanup();
+}
+
+std::string easy::print_error(curl::Code code)
+{
+    return std::string{curl_easy_strerror(static_cast<CURLcode>(code))};
 }
 
 easy::native::Handle easy::native::init()
@@ -146,8 +153,6 @@ struct easy::Handle::Private
 
     std::shared_ptr<CURL> handle;
 
-    shared::Handle shared;
-
     easy::Handle::OnFinished on_finished_cb;
     easy::Handle::OnProgress on_progress;
     easy::Handle::OnReadData on_read_data_cb;
@@ -155,6 +160,7 @@ struct easy::Handle::Private
     easy::Handle::OnWriteHeader on_write_header_cb;
 
     ::curl::StringList* header_string_list;
+    char error[CURL_ERROR_SIZE];
 };
 
 int easy::Handle::progress_cb(void* data, double dltotal, double dlnow, double ultotal, double ulnow)
@@ -221,9 +227,8 @@ easy::Handle::HandleHasBeenAbandoned::HandleHasBeenAbandoned()
 easy::Handle::Handle() : d(new Private())
 {
     set_option(Option::http_auth, CURLAUTH_ANY);
-    set_option(Option::sharing, d->shared.native());
+    set_option(Option::error_buffer, d->error);
     set_option(Option::ssl_engine_default, easy::enable);
-
     set_option(Option::no_signal, easy::enable);
 }
 
@@ -423,7 +428,7 @@ easy::native::Handle easy::Handle::native() const
 void easy::Handle::perform()
 {
     if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
-    throw_if_not<curl::Code::ok>(easy::native::perform(native()));
+    throw_if_not<curl::Code::ok>(easy::native::perform(native()), [this]() { return std::string{d->error};});
 }
 
 // URL escapes the given input string.
@@ -446,4 +451,9 @@ void easy::Handle::notify_finished(curl::Code code)
 
     if (d->on_finished_cb)
         d->on_finished_cb(code);
+}
+
+std::string easy::Handle::error() const
+{
+    return std::string{d->error};
 }
