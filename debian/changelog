@@ -1,3 +1,11 @@
+net-cpp (1.1.0+15.04.20150305-0ubuntu1) vivid; urgency=medium
+
+  [ thomas-voss ]
+  * Make sure that Multi::Private instances are correctly cleaned up by
+    only handing out weak_ptr's to it. (LP: #1419620, #1423765)
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Thu, 05 Mar 2015 12:08:09 +0000
+
 net-cpp (1.1.0+15.04.20150123-0ubuntu1) vivid; urgency=low
 
   [ Ubuntu daily release ]
