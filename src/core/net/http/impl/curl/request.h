@@ -18,7 +18,7 @@
 #ifndef CORE_NET_HTTP_IMPL_CURL_REQUEST_H_
 #define CORE_NET_HTTP_IMPL_CURL_REQUEST_H_
 
-#include <core/net/http/request.h>
+#include <core/net/http/streaming_request.h>
 
 #include <core/net/http/error.h>
 #include <core/net/http/response.h>
@@ -80,7 +80,7 @@ struct StateGuard
     std::atomic<core::net::http::Request::State>& state;
 };
 
-class Request : public core::net::http::Request,
+class Request : public core::net::http::StreamingRequest,
                 public std::enable_shared_from_this<Request>
 {
 public:
@@ -118,6 +118,11 @@ public:
 
     Response execute(const Request::ProgressHandler& ph)
     {
+        return execute(ph, [](const std::string&){});
+    }
+
+    Response execute(const Request::ProgressHandler& ph, const StreamingRequest::DataHandler& dh)
+    {
         if (atomic_state.load() != core::net::http::Request::State::ready)
             throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
 
@@ -149,6 +154,8 @@ public:
         easy.on_write_data(
                     [&](char* data, std::size_t size, std::size_t nmemb)
                     {
+                        // Report out to the data handler prior to accumulating data.
+                        dh(std::string{data, size * nmemb});
                         context.body.write(data, size * nmemb);
                         return size * nmemb;
                     });
@@ -182,6 +189,11 @@ public:
     }
 
     void async_execute(const Request::Handler& handler)
+    {
+        async_execute(handler, [](const std::string&){});
+    }
+
+    void async_execute(const Request::Handler& handler, const StreamingRequest::DataHandler& dh)
     {
         if (atomic_state.load() != core::net::http::Request::State::ready)
             throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
@@ -235,8 +247,10 @@ public:
         }
 
         easy.on_write_data(
-                    [context](char* data, std::size_t size, std::size_t nmemb)
+                    [context, dh](char* data, std::size_t size, std::size_t nmemb)
                     {
+                        // Report out to the data handler prior to accumulating data.
+                        dh(std::string{data, size * nmemb});
                         context->body.write(data, size * nmemb);
                         return size * nmemb;
                     });

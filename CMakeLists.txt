@@ -36,6 +36,8 @@ include_directories(
   include/
 )
 
+file(GLOB_RECURSE NET_CPP_INTERFACE_HEADERS include/*.h)
+
 add_subdirectory(doc)
 add_subdirectory(data)
 add_subdirectory(include)

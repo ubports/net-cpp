@@ -20,6 +20,7 @@
 #include "curl.h"
 #include "request.h"
 
+#include <core/net/http/content_type.h>
 #include <core/net/http/method.h>
 
 #include <boost/archive/iterators/base64_from_binary.hpp>
@@ -107,7 +108,7 @@ void http::impl::curl::Client::stop()
     multi.stop();
 }
 
-std::shared_ptr<http::Request> http::impl::curl::Client::head(const http::Request::Configuration& configuration)
+std::shared_ptr<http::impl::curl::Request> http::impl::curl::Client::head_impl(const http::Request::Configuration& configuration)
 {
     ::curl::easy::Handle handle;
     handle.method(http::Method::head)
@@ -126,10 +127,10 @@ std::shared_ptr<http::Request> http::impl::curl::Client::head(const http::Reques
         handle.http_credentials(credentials.username, credentials.password);
     }
 
-    return std::shared_ptr<http::Request>{new http::impl::curl::Request{multi, handle}};
+    return std::shared_ptr<http::impl::curl::Request>{new http::impl::curl::Request{multi, handle}};
 }
 
-std::shared_ptr<http::Request> http::impl::curl::Client::get(const http::Request::Configuration& configuration)
+std::shared_ptr<http::impl::curl::Request> http::impl::curl::Client::get_impl(const http::Request::Configuration& configuration)
 {
     ::curl::easy::Handle handle;
     handle.method(http::Method::get)
@@ -147,10 +148,10 @@ std::shared_ptr<http::Request> http::impl::curl::Client::get(const http::Request
         handle.http_credentials(credentials.username, credentials.password);
     }
 
-    return std::shared_ptr<http::Request>{new http::impl::curl::Request{multi, handle}};
+    return std::shared_ptr<http::impl::curl::Request>{new http::impl::curl::Request{multi, handle}};
 }
 
-std::shared_ptr<http::Request> http::impl::curl::Client::post(
+std::shared_ptr<http::impl::curl::Request> http::impl::curl::Client::post_impl(
         const Request::Configuration& configuration,
         const std::string& payload,
         const std::string& ct)
@@ -172,10 +173,10 @@ std::shared_ptr<http::Request> http::impl::curl::Client::post(
         handle.http_credentials(credentials.username, credentials.password);
     }
 
-    return std::shared_ptr<http::Request>{new http::impl::curl::Request{multi, handle}};
+    return std::shared_ptr<http::impl::curl::Request>{new http::impl::curl::Request{multi, handle}};
 }
 
-std::shared_ptr<http::Request> http::impl::curl::Client::put(
+std::shared_ptr<http::impl::curl::Request> http::impl::curl::Client::put_impl(
         const Request::Configuration& configuration,
         std::istream& payload,
         std::size_t size)
@@ -201,10 +202,75 @@ std::shared_ptr<http::Request> http::impl::curl::Client::put(
         handle.http_credentials(credentials.username, credentials.password);
     }
 
-    return std::shared_ptr<http::Request>{new http::impl::curl::Request{multi, handle}};
+    return std::shared_ptr<http::impl::curl::Request>{new http::impl::curl::Request{multi, handle}};
+}
+
+std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_get(const http::Request::Configuration& configuration)
+{
+    return get_impl(configuration);
+}
+
+std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_head(const http::Request::Configuration& configuration)
+{
+    return head_impl(configuration);
+}
+
+std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_put(const http::Request::Configuration& configuration, std::istream& payload, std::size_t size)
+{
+    return put_impl(configuration, payload, size);
+}
+
+std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_post(const http::Request::Configuration& configuration, const std::string& payload, const std::string& type)
+{
+    return post_impl(configuration, payload, type);
+}
+
+std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_post_form(const http::Request::Configuration& configuration, const std::map<std::string, std::string>& values)
+{
+    std::stringstream ss;
+    bool first{true};
+
+    for (const auto& pair : values)
+    {
+        ss << (first ? "" : "&") << url_escape(pair.first) << "=" << url_escape(pair.second);
+        first = false;
+    }
+
+    return post_impl(configuration, ss.str(), http::ContentType::x_www_form_urlencoded);
+}
+
+std::shared_ptr<http::Request> http::impl::curl::Client::head(const http::Request::Configuration& configuration)
+{
+    return head_impl(configuration);
+}
+
+std::shared_ptr<http::Request> http::impl::curl::Client::get(const http::Request::Configuration& configuration)
+{
+    return get_impl(configuration);
+}
+
+std::shared_ptr<http::Request> http::impl::curl::Client::post(
+        const Request::Configuration& configuration,
+        const std::string& payload,
+        const std::string& ct)
+{
+    return post_impl(configuration, payload, ct);
+}
+
+std::shared_ptr<http::Request> http::impl::curl::Client::put(
+        const Request::Configuration& configuration,
+        std::istream& payload,
+        std::size_t size)
+{
+    return put_impl(configuration, payload, size);
 }
 
 std::shared_ptr<http::Client> http::make_client()
+{
+    return std::make_shared<http::impl::curl::Client>();
+}
+
+std::shared_ptr<http::StreamingClient> http::make_streaming_client()
 {
     return std::make_shared<http::impl::curl::Client>();
 }

@@ -22,6 +22,8 @@ include_directories(${Boost_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS})
 add_library(
   net-cpp SHARED
 
+  ${NET_CPP_INTERFACE_HEADERS}
+
   core/location.cpp
 
   core/net/error.cpp
