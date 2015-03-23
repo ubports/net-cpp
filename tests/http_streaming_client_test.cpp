@@ -83,7 +83,7 @@ bool init()
 static const bool is_initialized = init();
 }
 
-TEST(StreamingHttpClient, head_request_for_existing_resource_succeeds)
+TEST(StreamingStreamingHttpClient, head_request_for_existing_resource_succeeds)
 {
     using namespace ::testing;
 
@@ -106,7 +106,7 @@ TEST(StreamingHttpClient, head_request_for_existing_resource_succeeds)
     EXPECT_EQ(core::net::http::Status::ok, response.status);
 }
 
-TEST(HttpClient, get_request_for_existing_resource_succeeds)
+TEST(StreamingHttpClient, get_request_for_existing_resource_succeeds)
 {
     using namespace ::testing;
 
@@ -137,7 +137,7 @@ TEST(HttpClient, get_request_for_existing_resource_succeeds)
     EXPECT_EQ(url, root["url"].asString());
 }
 
-TEST(HttpClient, get_request_with_custom_headers_for_existing_resource_succeeds)
+TEST(StreamingHttpClient, get_request_with_custom_headers_for_existing_resource_succeeds)
 {
     using namespace ::testing;
 
@@ -176,7 +176,7 @@ TEST(HttpClient, get_request_with_custom_headers_for_existing_resource_succeeds)
     EXPECT_EQ("43", headers["Test2"].asString());
 }
 
-TEST(HttpClient, empty_header_values_are_handled_correctly)
+TEST(StreamingHttpClient, empty_header_values_are_handled_correctly)
 {
     using namespace ::testing;
 
@@ -212,7 +212,7 @@ TEST(HttpClient, empty_header_values_are_handled_correctly)
     EXPECT_EQ(std::string{}, headers["Empty"].asString());
 }
 
-TEST(HttpClient, get_request_for_existing_resource_guarded_by_basic_auth_succeeds)
+TEST(StreamingHttpClient, get_request_for_existing_resource_guarded_by_basic_auth_succeeds)
 {
     using namespace ::testing;
 
@@ -251,7 +251,7 @@ TEST(HttpClient, get_request_for_existing_resource_guarded_by_basic_auth_succeed
 }
 
 // Digest auth is broken on httpbin.org. It even fails in the browser after the first successful access.
-TEST(HttpClient, DISABLED_get_request_for_existing_resource_guarded_by_digest_auth_succeeds)
+TEST(StreamingHttpClient, DISABLED_get_request_for_existing_resource_guarded_by_digest_auth_succeeds)
 {
     using namespace ::testing;
 
@@ -289,7 +289,7 @@ TEST(HttpClient, DISABLED_get_request_for_existing_resource_guarded_by_digest_au
     EXPECT_EQ("user", root["user"].asString());
 }
 
-TEST(HttpClient, async_get_request_for_existing_resource_succeeds)
+TEST(StreamingHttpClient, async_get_request_for_existing_resource_succeeds)
 {
     using namespace ::testing;
 
@@ -345,7 +345,7 @@ TEST(HttpClient, async_get_request_for_existing_resource_succeeds)
         worker.join();
 }
 
-TEST(HttpClient, async_get_request_for_existing_resource_guarded_by_basic_authentication_succeeds)
+TEST(StreamingHttpClient, async_get_request_for_existing_resource_guarded_by_basic_authentication_succeeds)
 {
     using namespace ::testing;
 
@@ -411,7 +411,7 @@ TEST(HttpClient, async_get_request_for_existing_resource_guarded_by_basic_authen
     EXPECT_EQ("user", root["user"].asString());
 }
 
-TEST(HttpClient, post_request_for_existing_resource_succeeds)
+TEST(StreamingHttpClient, post_request_for_existing_resource_succeeds)
 {
     using namespace ::testing;
 
@@ -446,7 +446,7 @@ TEST(HttpClient, post_request_for_existing_resource_succeeds)
     EXPECT_EQ(payload, root["data"].asString());
 }
 
-TEST(HttpClient, post_form_request_for_existing_resource_succeeds)
+TEST(StreamingHttpClient, post_form_request_for_existing_resource_succeeds)
 {
     using namespace ::testing;
 
@@ -480,7 +480,7 @@ TEST(HttpClient, post_form_request_for_existing_resource_succeeds)
     EXPECT_EQ("test", root["form"]["test"].asString());
 }
 
-TEST(HttpClient, put_request_for_existing_resource_succeeds)
+TEST(StreamingHttpClient, put_request_for_existing_resource_succeeds)
 {
     using namespace ::testing;
 
