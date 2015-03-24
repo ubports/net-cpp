@@ -46,16 +46,16 @@ public:
 
     std::string base64_decode(const std::string& s) const override;
 
-    core::net::http::Client::Timings timings();
+    core::net::http::Client::Timings timings() override;
 
-    void run();
+    void run() override;
 
-    void stop();
+    void stop() override;
 
-    std::shared_ptr<http::Request> get(const Request::Configuration& configuration);
-    std::shared_ptr<http::Request> head(const Request::Configuration& configuration);
-    std::shared_ptr<http::Request> post(const Request::Configuration& configuration, const std::string&, const std::string&);
-    std::shared_ptr<http::Request> put(const Request::Configuration& configuration, std::istream& payload, std::size_t size);
+    std::shared_ptr<http::Request> get(const Request::Configuration& configuration) override;
+    std::shared_ptr<http::Request> head(const Request::Configuration& configuration) override;
+    std::shared_ptr<http::Request> post(const Request::Configuration& configuration, const std::string&, const std::string&) override;
+    std::shared_ptr<http::Request> put(const Request::Configuration& configuration, std::istream& payload, std::size_t size) override;
 
     std::shared_ptr<http::StreamingRequest> streaming_get(const Request::Configuration& configuration) override;
     std::shared_ptr<http::StreamingRequest> streaming_head(const Request::Configuration& configuration) override;
