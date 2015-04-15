@@ -1,8 +1,9 @@
-net-cpp (1.2.0) UNRELEASED; urgency=medium
+net-cpp (1.2.0+15.04.20150415.2-0ubuntu1) vivid; urgency=medium
 
+  [ Thomas Voß ]
   * Introduce a streaming http interface.
 
- -- Thomas Voß <thomas.voss@canonical.com>  Wed, 01 Apr 2015 08:22:32 +0200
+ -- CI Train Bot <ci-train-bot@canonical.com>  Wed, 15 Apr 2015 12:34:49 +0000
 
 net-cpp (1.1.0+15.04.20150305-0ubuntu1) vivid; urgency=medium
 
