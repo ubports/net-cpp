@@ -57,6 +57,11 @@ add_executable(
 )
 
 add_executable(
+  http_streaming_client_test
+  http_streaming_client_test.cpp
+)
+
+add_executable(
   http_client_load_test
   http_client_load_test.cpp
 )
@@ -82,6 +87,16 @@ target_link_libraries(
 )
 
 target_link_libraries(
+    http_streaming_client_test
+
+    net-cpp
+
+    ${GMOCK_BOTH_LIBRARIES}
+    ${JSON_CPP_LDFLAGS}
+    ${PROCESS_CPP_LDFLAGS}
+)
+
+target_link_libraries(
     http_client_load_test
 
     net-cpp
@@ -93,4 +108,5 @@ target_link_libraries(
 
 add_test(header_test ${CMAKE_CURRENT_BINARY_DIR}/header_test)
 add_test(http_client_test ${CMAKE_CURRENT_BINARY_DIR}/http_client_test)
+add_test(http_streaming_client_test ${CMAKE_CURRENT_BINARY_DIR}/http_streaming_client_test)
 add_test(http_client_load_test ${CMAKE_CURRENT_BINARY_DIR}/http_client_load_test)

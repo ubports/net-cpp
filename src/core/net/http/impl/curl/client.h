@@ -18,9 +18,10 @@
 #ifndef CORE_NET_HTTP_IMPL_CURL_CLIENT_H_
 #define CORE_NET_HTTP_IMPL_CURL_CLIENT_H_
 
-#include <core/net/http/client.h>
+#include <core/net/http/streaming_client.h>
 
 #include "curl.h"
+#include "request.h"
 
 namespace core
 {
@@ -32,7 +33,7 @@ namespace impl
 {
 namespace curl
 {
-class Client : public core::net::http::Client
+class Client : public core::net::http::StreamingClient
 {
 public:
     Client();
@@ -45,23 +46,30 @@ public:
 
     std::string base64_decode(const std::string& s) const override;
 
-    core::net::http::Client::Timings timings();
+    core::net::http::Client::Timings timings() override;
 
-    void run();
+    void run() override;
 
-    void stop();
+    void stop() override;
 
-    std::shared_ptr<Request> get(const Request::Configuration& configuration);
+    std::shared_ptr<http::Request> get(const Request::Configuration& configuration) override;
+    std::shared_ptr<http::Request> head(const Request::Configuration& configuration) override;
+    std::shared_ptr<http::Request> post(const Request::Configuration& configuration, const std::string&, const std::string&) override;
+    std::shared_ptr<http::Request> put(const Request::Configuration& configuration, std::istream& payload, std::size_t size) override;
 
-    std::shared_ptr<Request> head(const Request::Configuration& configuration);
-
-    std::shared_ptr<Request> post(const Request::Configuration& configuration, const std::string&, const std::string&);
-
-    std::shared_ptr<Request> put(const Request::Configuration& configuration, std::istream& payload, std::size_t size);
+    std::shared_ptr<http::StreamingRequest> streaming_get(const Request::Configuration& configuration) override;
+    std::shared_ptr<http::StreamingRequest> streaming_head(const Request::Configuration& configuration) override;
+    std::shared_ptr<http::StreamingRequest> streaming_put(const Request::Configuration& configuration, std::istream& payload, std::size_t size) override;
+    std::shared_ptr<http::StreamingRequest> streaming_post(const Request::Configuration& configuration, const std::string& payload, const std::string& type) override;
+    std::shared_ptr<http::StreamingRequest> streaming_post_form(const Request::Configuration& configuration, const std::map<std::string, std::string>& values) override;
 
 private:
-    ::curl::multi::Handle multi;
+    std::shared_ptr<curl::Request> get_impl(const Request::Configuration& configuration);
+    std::shared_ptr<curl::Request> head_impl(const Request::Configuration& configuration);
+    std::shared_ptr<curl::Request> post_impl(const Request::Configuration& configuration, const std::string&, const std::string&);
+    std::shared_ptr<curl::Request> put_impl(const Request::Configuration& configuration, std::istream& payload, std::size_t size);
 
+    ::curl::multi::Handle multi;    
 };
 }
 }

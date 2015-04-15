@@ -27,7 +27,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Werror -Wall -fno-strict-ali
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 
 set(NET_CPP_VERSION_MAJOR 1)
-set(NET_CPP_VERSION_MINOR 1)
+set(NET_CPP_VERSION_MINOR 2)
 set(NET_CPP_VERSION_PATCH 0)
 
 include(CTest)
@@ -35,6 +35,8 @@ include(CTest)
 include_directories(
   include/
 )
+
+file(GLOB_RECURSE NET_CPP_INTERFACE_HEADERS include/*.h)
 
 add_subdirectory(doc)
 add_subdirectory(data)
