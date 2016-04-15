@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
+ *              Gary Wang  <gary.wang@canonical.com>
  */
 
 #include "easy.h"
@@ -94,6 +95,11 @@ void easy::native::cleanup(easy::native::Handle handle)
 ::curl::Code easy::native::perform(easy::native::Handle handle)
 {
     return static_cast<curl::Code>(curl_easy_perform(handle));
+}
+
+::curl::Code easy::native::pause(easy::native::Handle handle, int bitmask)
+{
+    return static_cast<curl::Code>(curl_easy_pause(handle, bitmask));
 }
 
 std::string easy::native::escape(easy::native::Handle handle, const std::string& in)
@@ -230,6 +236,12 @@ easy::Handle::Handle() : d(new Private())
     set_option(Option::error_buffer, d->error);
     set_option(Option::ssl_engine_default, easy::enable);
     set_option(Option::no_signal, easy::enable);
+
+    //Make it possible to get a chance to run on_progress call back function when pause() is called. 
+    //Otherwise progress call back function will not be invoked, which causes threads doesn't get notified
+    //after the proper magic return code even if resume() is called.
+    set_option(Option::low_speed_limit, 1);
+    set_option(Option::low_speed_time, 10);
 }
 
 void easy::Handle::release()
@@ -355,6 +367,8 @@ easy::Handle& easy::Handle::method(core::net::http::Method method)
 {
     if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
 
+    static constexpr const char* http_delete = "DELETE";
+
     switch(method)
     {
     case core::net::http::Method::get:
@@ -370,6 +384,9 @@ easy::Handle& easy::Handle::method(core::net::http::Method method)
         break;
     case core::net::http::Method::put:
         set_option(Option::http_put, enable);
+        break;
+    case core::net::http::Method::del:
+        set_option(Option::customrequest, http_delete);
         break;
     default: throw core::net::http::Client::Errors::HttpMethodNotSupported{method, CORE_FROM_HERE()};
     }
@@ -429,6 +446,18 @@ void easy::Handle::perform()
 {
     if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
     throw_if_not<curl::Code::ok>(easy::native::perform(native()), [this]() { return std::string{d->error};});
+}
+
+void easy::Handle::pause()
+{
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+    throw_if_not<curl::Code::ok>(easy::native::pause(native(), CURLPAUSE_ALL), [this]() { return std::string{d->error};});
+}
+
+void easy::Handle::resume()
+{
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+    throw_if_not<curl::Code::ok>(easy::native::pause(native(), CURLPAUSE_RECV_CONT), [this]() { return std::string{d->error};});
 }
 
 // URL escapes the given input string.

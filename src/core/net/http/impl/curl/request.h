@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
+ *              Gary Wang  <gary.wang@canonical.com>
  */
 #ifndef CORE_NET_HTTP_IMPL_CURL_REQUEST_H_
 #define CORE_NET_HTTP_IMPL_CURL_REQUEST_H_
@@ -272,6 +273,28 @@ public:
 
         multi.add(easy);
     }
+
+    void pause()
+    {   
+        try
+        {   
+            easy.pause();
+        } catch(const std::system_error& se)
+        {   
+            throw core::net::http::Error(se.what(), CORE_FROM_HERE());
+        }       
+    }       
+
+    void resume()
+    {   
+        try
+        {   
+            easy.resume();
+        } catch(const std::system_error& se)
+        {   
+            throw core::net::http::Error(se.what(), CORE_FROM_HERE());
+        }       
+    }       
 
     std::string url_escape(const std::string& s)
     {
