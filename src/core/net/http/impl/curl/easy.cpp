@@ -236,12 +236,6 @@ easy::Handle::Handle() : d(new Private())
     set_option(Option::error_buffer, d->error);
     set_option(Option::ssl_engine_default, easy::enable);
     set_option(Option::no_signal, easy::enable);
-
-    //Make it possible to get a chance to run on_progress call back function when pause() is called. 
-    //Otherwise progress call back function will not be invoked, which causes threads doesn't get notified
-    //after the proper magic return code even if resume() is called.
-    set_option(Option::low_speed_limit, 1);
-    set_option(Option::low_speed_time, 10);
 }
 
 void easy::Handle::release()

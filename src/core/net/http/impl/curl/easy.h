@@ -168,6 +168,12 @@ constexpr static const long enable = 1;
 // Constant for enabling automatic SSL host verification.
 constexpr static const long enable_ssl_host_verification = 2;
 
+// Constant for low speed limit. 
+constexpr static const long low_speed_limit = 1;
+
+// Constant for low speed time. 
+constexpr static const long low_speed_time = 10;
+
 // Returns a human-readable description of the error code.
 std::string print_error(Code code);
 

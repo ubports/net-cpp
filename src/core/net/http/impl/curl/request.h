@@ -98,6 +98,10 @@ public:
           multi(multi),
           easy(easy)
     {
+        //Make it possible to get a chance to run on_progress call back function when pause() is called. 
+        //Otherwise progress call back function will not be invoked, which causes threads doesn't get notified
+        //after the proper magic return code even if resume() is called.
+        abort_request_option(::curl::easy::low_speed_limit, ::curl::easy::low_speed_time);
     }
 
     State state()
@@ -305,6 +309,16 @@ public:
     {
         return easy.unescape(s);
     }
+
+    void abort_request_option(long speed_limit, long speed_time)
+    {
+        if (atomic_state.load() != core::net::http::Request::State::ready)
+            throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
+    
+        easy.set_option(::curl::Option::low_speed_limit, speed_limit);
+        easy.set_option(::curl::Option::low_speed_time, speed_time);
+    }
+
 private:
     std::atomic<core::net::http::Request::State> atomic_state;
     ::curl::multi::Handle multi;

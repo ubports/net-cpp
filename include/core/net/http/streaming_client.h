@@ -94,7 +94,7 @@ public:
     /**
     * @brief streaming_del is a convenience method for issuing a DELETE request for the given URI.
     * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
-    * @param configuration The configuration to issue a get request for.
+    * @param configuration The configuration to issue a del request for.
     * @return An executable instance of class Request.
     */
     virtual std::shared_ptr<StreamingRequest> streaming_del(const Request::Configuration& configuration) = 0;
