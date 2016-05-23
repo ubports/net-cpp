@@ -274,12 +274,11 @@ public:
 
     /**
      * @brief Sets options for aborting the request.
-     * The request will be aborted if transfer speed belows \a speed_limit bytes per second for \a speed_time seconds
-     * @param speed_limit The transfer speed in seconds.
-     * @param speed_time waiting period(seconds) to abort the request.
-     * @note The default value for \a speed_limit is 1 byte and the default value for \a speed_time is 10 seconds.
+     * The request will be aborted if transfer speed belows \a limit bytes per second for \a time seconds
+     * @param limit The transfer speed in seconds.
+     * @param time waiting period(seconds) to abort the request.
      */
-    virtual void abort_request_option(long speed_limit, long speed_time) = 0;
+    virtual void abort_request_if(std::uint64_t limit, const std::chrono::seconds& time) = 0;
 
 protected:
     /** @cond */
