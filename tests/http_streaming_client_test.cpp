@@ -594,3 +594,59 @@ TEST(StreamingHttpClient, del_request_for_existing_resource_succeeds)
     EXPECT_EQ(url, root["url"].asString());
 }
 
+TEST(StreamingHttpClient, pause_and_resume)
+{
+    using namespace ::testing;
+    // We obtain a default client instance, dispatching to the default implementation.
+    auto client = http::make_streaming_client();
+
+    // Execute the client
+    std::thread worker{[client]() { client->run(); }};
+
+    auto url = "https://www.python.org/ftp/python/3.5.1/Python-3.5.1.tar.xz";
+
+    // The client mostly acts as a factory for http requests.
+    auto request = client->streaming_get(http::Request::Configuration::from_uri_as_string(url));
+
+    // Our mocked data handler.
+    auto dh = MockDataHandler::create(); EXPECT_CALL(*dh, on_new_data(_)).Times(AtLeast(1));
+
+    std::promise<core::net::http::Response> promise;
+    auto future = promise.get_future();
+
+    // We finally execute the query asynchronously.
+    request->async_execute(
+                http::Request::Handler()
+                    .on_progress(default_progress_reporter)
+                    .on_response([&](const core::net::http::Response& response)
+                    {
+                        promise.set_value(response);
+                    })
+                    .on_error([&](const core::net::Error& e)
+                    {
+                        promise.set_exception(std::make_exception_ptr(e));
+                    }),
+                dh->to_data_handler());
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    std::cout << "we pause" << std::endl;
+    request->pause();
+    
+    //Please check if we can resume if we didn't set speed_limit/time option for this request
+    std::this_thread::sleep_for(std::chrono::microseconds(5000));
+
+    std::cout << "we resume." << std::endl;
+    request->resume();
+
+    auto response = future.get();
+    
+    // We expect the query to complete successfully
+    EXPECT_EQ(core::net::http::Status::ok, response.status);
+
+    client->stop();
+
+    // We shut down our worker thread
+    if (worker.joinable())
+        worker.join();    
+}
+
