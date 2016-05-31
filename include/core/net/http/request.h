@@ -213,6 +213,13 @@ public:
             /** Invoked for querying user credentials to authenticate proxy accesses. */
             AuthenicationHandler for_proxy;
         } authentication_handler;
+
+        /** Encapsulates thresholds for minimum transfer speed in [kB/s] for duration seconds. */
+        struct
+        {
+            std::uint64_t limit{1};
+            std::chrono::seconds duration{std::chrono::seconds{30}};
+        } speed;
     };
 
     Request(const Request&) = delete;
@@ -251,11 +258,9 @@ public:
     /**
      * @brief Pause the request with options for aborting the request.
      * The request will be aborted if transfer speed falls below \a limit in [bytes/second] for \a time seconds.
-     * @param limit transfer speed in [bytes/second].
-     * @param time waiting period in [second] to abort the request.
      * @throw core::net::http::Error in case of http-related errors.
      */
-    virtual void pause(std::uint64_t limit, const std::chrono::seconds& time) = 0;
+    virtual void pause() = 0;
 
     /**
      * @brief Resume the request

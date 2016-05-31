@@ -242,7 +242,6 @@ public:
                 case Request::Progress::Next::abort_operation: result = 1; break;
                 case Request::Progress::Next::continue_operation: result = 0; break;
                 }
-
                 return result;
             });
         }
@@ -274,29 +273,30 @@ public:
         multi.add(easy);
     }
 
-    void pause(std::uint64_t limit, const std::chrono::seconds& time)
-    {   
-        try
-        {   
-            easy.set_option(::curl::Option::low_speed_limit, limit);
-            easy.set_option(::curl::Option::low_speed_time, time.count());
-            easy.pause();
-        } catch(const std::system_error& se)
-        {   
-            throw core::net::http::Error(se.what(), CORE_FROM_HERE());
-        }       
+    void pause()
+    {
+        auto copy = easy;
+        multi.dispatch([copy]() mutable
+        {
+            try
+            {
+                copy.pause();
+            } catch(const std::system_error& se) { throw core::net::http::Error(se.what(), CORE_FROM_HERE()); }
+        });
+
     }       
 
     void resume()
-    {   
-        try
-        {   
-            easy.resume();
-        } catch(const std::system_error& se)
-        {   
-            throw core::net::http::Error(se.what(), CORE_FROM_HERE());
-        }       
-    }       
+    {
+        auto copy = easy;
+        multi.dispatch([copy]() mutable
+        {
+            try
+            {
+                copy.resume();
+            } catch(const std::system_error& se) { throw core::net::http::Error(se.what(), CORE_FROM_HERE()); }
+        });
+    }
 
     std::string url_escape(const std::string& s)
     {
