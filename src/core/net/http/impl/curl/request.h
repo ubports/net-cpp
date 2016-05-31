@@ -274,10 +274,12 @@ public:
         multi.add(easy);
     }
 
-    void pause()
+    void pause(std::uint64_t limit, const std::chrono::seconds& time)
     {   
         try
         {   
+            easy.set_option(::curl::Option::low_speed_limit, limit);
+            easy.set_option(::curl::Option::low_speed_time, time.count());
             easy.pause();
         } catch(const std::system_error& se)
         {   
@@ -304,15 +306,6 @@ public:
     std::string url_unescape(const std::string& s)
     {
         return easy.unescape(s);
-    }
-
-    void abort_request_if(std::uint64_t limit, const std::chrono::seconds& time)
-    {
-        if (atomic_state.load() != core::net::http::Request::State::ready)
-            throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
-    
-        easy.set_option(::curl::Option::low_speed_limit, limit);
-        easy.set_option(::curl::Option::low_speed_time, time.count());
     }
 
 private:
