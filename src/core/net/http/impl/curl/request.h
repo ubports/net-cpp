@@ -281,7 +281,8 @@ public:
             try
             {
                 copy.pause();
-            } catch(const std::system_error& se) { throw core::net::http::Error(se.what(), CORE_FROM_HERE()); }
+            }
+            catch(...) {}
         });
 
     }       
@@ -294,7 +295,9 @@ public:
             try
             {
                 copy.resume();
-            } catch(const std::system_error& se) { throw core::net::http::Error(se.what(), CORE_FROM_HERE()); }
+            }
+            catch(...) {}
+
         });
     }
 

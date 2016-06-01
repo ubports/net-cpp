@@ -91,7 +91,7 @@ public:
             std::ostream& out;
         } cs{out};
 
-        out << "\r" << "[" << std::setw(width) << std::left << std::setfill(' ') << std::string(percentage * width, '=') << "] " << std::setw(5) << std::fixed << std::setprecision(2) << percentage * 100 << " %";
+        out << "\r" << "[" << std::setw(width) << std::left << std::setfill(' ') << std::string(percentage * width, '=') << "] " << std::setw(5) << std::fixed << std::setprecision(2) << percentage * 100 << " %" << std::flush;
     }
 
 private:
