@@ -543,6 +543,39 @@ TEST(StreamingHttpClient, post_request_for_file_with_large_chunk_succeeds)
     EXPECT_EQ(url, root["url"].asString());
 }
 
+TEST(StreamingHttpClient, post_request_for_file_with_large_chunk_with_read_callback)
+{
+    using namespace ::testing;
+
+    auto client = http::make_streaming_client();
+    auto url = std::string(httpbin::host) + httpbin::resources::post();
+  
+    // create temp file with large chunk
+    const std::size_t size = 1024*1024;
+    std::ofstream ofs("tmp.dat", std::ios::binary | std::ios::out);
+    ofs.seekp(size);
+    ofs.write("", 1);
+    ofs.close();
+
+    std::ifstream payload("tmp.dat");
+    auto request = client->streaming_post(http::Request::Configuration::from_uri_as_string(url),
+                                [&payload](void *dest, size_t buf_size) -> size_t {
+                                    return payload.readsome(static_cast<char *>(dest), buf_size);
+                                },
+                                size);
+  
+    auto dh = MockDataHandler::create(); EXPECT_CALL(*dh, on_new_data(_)).Times(AtLeast(1));
+  
+    auto response = request->execute(default_progress_reporter, dh->to_data_handler());
+  
+    json::Value root;
+    json::Reader reader;
+
+    EXPECT_EQ(core::net::http::Status::ok, response.status);
+    EXPECT_TRUE(reader.parse(response.body, root));
+    EXPECT_EQ(url, root["url"].asString());
+}
+
 TEST(StreamingHttpClient, put_request_for_existing_resource_succeeds)
 {
     using namespace ::testing;
@@ -587,6 +620,39 @@ TEST(StreamingHttpClient, put_request_for_file_with_large_chunk_succeeds)
     std::ifstream payload("tmp.dat");
     auto request = client->streaming_put(http::Request::Configuration::from_uri_as_string(url),
                                payload,
+                               size);
+  
+    auto dh = MockDataHandler::create(); EXPECT_CALL(*dh, on_new_data(_)).Times(AtLeast(1));
+
+    auto response = request->execute(default_progress_reporter, dh->to_data_handler());
+  
+    json::Value root;
+    json::Reader reader;
+  
+    EXPECT_EQ(core::net::http::Status::ok, response.status);
+    EXPECT_TRUE(reader.parse(response.body, root));
+    EXPECT_EQ(url, root["url"].asString());
+}
+
+TEST(StreamingHttpClient, put_request_for_file_with_large_chunk_with_read_callback)
+{
+    using namespace ::testing;
+
+    auto client = http::make_streaming_client();
+    auto url = std::string(httpbin::host) + httpbin::resources::put();
+  
+    // create temp file with large chunk
+    const std::size_t size = 1024*1024;
+    std::ofstream ofs("tmp.dat", std::ios::binary | std::ios::out);
+    ofs.seekp(size);
+    ofs.write("", 1); 
+    ofs.close();
+  
+    std::ifstream payload("tmp.dat");
+    auto request = client->streaming_put(http::Request::Configuration::from_uri_as_string(url),
+                                [&payload](void *dest, size_t buf_size) -> size_t {
+                                    return payload.readsome(static_cast<char *>(dest), buf_size);
+                                },
                                size);
   
     auto dh = MockDataHandler::create(); EXPECT_CALL(*dh, on_new_data(_)).Times(AtLeast(1));

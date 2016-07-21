@@ -89,7 +89,8 @@ enum class Code
     ssl_crl_bad_file = CURLE_SSL_CRL_BADFILE,
     ssl_issuer_error = CURLE_SSL_ISSUER_ERROR,
     chunk_failed = CURLE_CHUNK_FAILED,
-    no_connection_available = CURLE_NO_CONNECTION_AVAILABLE
+    no_connection_available = CURLE_NO_CONNECTION_AVAILABLE,
+    no_readfunc_abort = CURL_READFUNC_ABORT
 };
 
 std::ostream& operator<<(std::ostream& out, Code code);
