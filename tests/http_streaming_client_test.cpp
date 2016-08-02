@@ -698,7 +698,7 @@ TEST(StreamingHttpClient, request_can_be_paused_and_resumed)
     // Execute the client
     std::thread worker{[client]() { client->run(); }};
 
-    auto url = "http://archive.ubuntu.com/ubuntu/dists/xenial/main/installer-amd64/current/images/netboot/mini.iso";
+    auto url = "http://archive.ubuntu.com/ubuntu/dists/xenial/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/linux";
 
     // The client mostly acts as a factory for http requests.
     auto request = client->streaming_get(http::Request::Configuration::from_uri_as_string(url));
