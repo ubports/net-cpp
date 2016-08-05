@@ -1,3 +1,3 @@
-usr/include/core/*
+usr/include/mcloud/*
 usr/lib/*/libnet-cpp.so
 usr/lib/*/pkgconfig/*

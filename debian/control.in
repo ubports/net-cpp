@@ -26,7 +26,7 @@ Homepage: https://launchpad.net/net-cpp
 Vcs-Bzr: https://code.launchpad.net/~phablet-team/net-cpp/trunk
 Vcs-Browser: https://bazaar.launchpad.net/~phablet-team/net-cpp/trunk/files
 
-Package: libnet-cpp4
+Package: libnet-cpp@NET_CPP_SOVERSION@
 Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends},
@@ -37,12 +37,12 @@ Description: C++11 library for networking purposes - runtime library
  .
  This package includes the net-cpp runtime libraries.
 
-Package: libnet-cpp-dev4
+Package: libnet-cpp-dev@NET_CPP_SOVERSION@
 Section: libdevel
 Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends},
-Depends: libnet-cpp4 (= ${binary:Version}),
+Depends: libnet-cpp@NET_CPP_SOVERSION@ (= ${binary:Version}),
          ${misc:Depends},
 Description: C++11 library for networking purposes - runtime library
  Net-Cpp is a simple and straightforward networking library for C++11.
@@ -50,11 +50,11 @@ Description: C++11 library for networking purposes - runtime library
  This package includes all the development headers and libraries for
  net-cpp.
 
-Package: libnet-cpp-doc4
+Package: libnet-cpp-doc@NET_CPP_SOVERSION@
 Section: doc
 Architecture: all
 Depends: ${misc:Depends},
-Suggests: libnet-cpp-dev4,
+Suggests: libnet-cpp-dev@NET_CPP_SOVERSION@,
 Description: Documentation files for libnet-cpp-dev
  Net-Cpp is a simple and straightforward networking library for C++11.
  .

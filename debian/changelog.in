@@ -1,4 +1,4 @@
-net-cpp (4.0.0ubuntu1) UNRELEASED; urgency=medium
+net-cpp (@NET_CPP_SOVERSION@.0.0ubuntu1) UNRELEASED; urgency=medium
 
   [ Thomas Voß ]
   [Gary Wang]
