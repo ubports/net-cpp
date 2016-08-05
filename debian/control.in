@@ -37,7 +37,7 @@ Description: C++11 library for networking purposes - runtime library
  .
  This package includes the net-cpp runtime libraries.
 
-Package: libnet-cpp-dev@NET_CPP_SOVERSION@
+Package: libnet-cpp@NET_CPP_SOVERSION@-dev
 Section: libdevel
 Architecture: any
 Multi-Arch: same
@@ -50,11 +50,11 @@ Description: C++11 library for networking purposes - runtime library
  This package includes all the development headers and libraries for
  net-cpp.
 
-Package: libnet-cpp-doc@NET_CPP_SOVERSION@
+Package: libnet-cpp@NET_CPP_SOVERSION@-doc
 Section: doc
 Architecture: all
 Depends: ${misc:Depends},
-Suggests: libnet-cpp-dev@NET_CPP_SOVERSION@,
+Suggests: libnet-cpp@NET_CPP_SOVERSION@-dev,
 Description: Documentation files for libnet-cpp-dev
  Net-Cpp is a simple and straightforward networking library for C++11.
  .
