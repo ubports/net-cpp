@@ -26,6 +26,10 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -pedantic -Wextra -fvisibility
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Werror -Wall -fno-strict-aliasing -fvisibility=hidden -fvisibility-inlines-hidden -pedantic -Wextra")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 
+# Use a private version of Boost.System's error code classes to avoid
+# a hard dependency on libboost_system.so
+add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
+
 set(NET_CPP_VERSION_MAJOR 1)
 set(NET_CPP_VERSION_MINOR 2)
 set(NET_CPP_VERSION_PATCH 0)
