@@ -53,7 +53,7 @@ bool init()
     return true;
 }
 
-static const bool is_initialized = init();
+static const bool is_initialized __attribute__((used)) = init();
 }
 
 TEST(HttpClient, uri_to_string)
