@@ -38,7 +38,7 @@ progname=$(basename $0)
     echo "usage: $progname [path-to-debian-dir]" >&2
     exit 1
 }
-dir=$1
+dir=$(dirname $0)
 
 [ -n "$dir" ] || dir="./debian"
 [ -n "$SERIES" ] || SERIES="$(lsb_release -c -s)"
@@ -46,9 +46,9 @@ dir=$1
 # Dump version numbers into files and initialize vars from those files.
 
 if [ "$SERIES" = "vivid" ]; then
-    NET_CPP_SOVERSION=$(cat ${dir}/VERSION.vivid)
+   export NET_CPP_SOVERSION=$(cat ${dir}/VERSION.vivid)
 else
-    NET_CPP_SOVERSION=$(cat ${dir}/VERSION)
+   export NET_CPP_SOVERSION=$(cat ${dir}/VERSION)
 fi
 
 process()

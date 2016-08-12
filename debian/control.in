@@ -58,7 +58,7 @@ Package: libnet-cpp-doc
 Section: doc
 Architecture: all
 Depends: ${misc:Depends},
-Suggests: libnet-cpp@NET_CPP_SOVERSION@-dev,
+Suggests: libnet-cpp-dev,
 Description: Documentation files for libnet-cpp-dev
  Net-Cpp is a simple and straightforward networking library for C++11.
  .
