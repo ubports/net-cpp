@@ -14,23 +14,15 @@
 #
 # Authored by: Thomas Voss <thomas.voss@canonical.com>
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 
-project(net-cpp)
+project(net-cpp VERSION 3.0.0)
+
+set(NET_CPP_SOVERSION 4 CACHE STRING "The version number from libnet-cpp's SONAME")
 
 find_package(Threads)
 
 include(GNUInstallDirs)
-
-    set(NET_CPP_VERSION_MAJOR 3)
-    set(NET_CPP_VERSION_MINOR 0)
-    set(NET_CPP_VERSION_PATCH 0)
-
-if (NOT DEFINED NET_CPP_SOVERSION)
-    set(NET_CPP_SOVERSION 4)
-endif()
- 
-message(STATUS "${CMAKE_PROJECT_NAME} ${NET_CPP_VERSION_MAJOR}.${NET_CPP_VERSION_MINOR}.${NET_CPP_VERSION_PATCH}")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -pedantic -Wextra -fvisibility=hidden")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Werror -Wall -fno-strict-aliasing -fvisibility=hidden -fvisibility-inlines-hidden -pedantic -Wextra")

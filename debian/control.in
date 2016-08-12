@@ -6,22 +6,18 @@ Build-Depends: cmake,
                doxygen,
                google-mock,
                graphviz,
-# We rely on C++11 features, and to prevent from ABI breaks
-# in libstdc++ causing us issues, we explicitly select a G++
-# version.
-               g++-4.9,
                libboost-dev (>= 1.58) | libboost1.58-dev,
                libboost-serialization-dev (>= 1.58) | libboost-serialization1.58-dev,
                libboost-system-dev (>= 1.58) | libboost-system1.58-dev,
                libcurl4-openssl-dev,
                libjsoncpp-dev,
-               libprocess-cpp-dev,
+               libprocess-cpp-dev (>= 2.0.0),
+               lsb-release,
                pkg-config,
                python-decorator,
                python-flask,
                python-flask-script,
                python-simplejson,
-               lsb-release,
 Standards-Version: 3.9.5
 Section: libs
 Homepage: https://launchpad.net/net-cpp
