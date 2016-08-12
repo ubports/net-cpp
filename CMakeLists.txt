@@ -29,10 +29,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Werror -Wall -fno-strict-ali
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
 
-set(NET_CPP_VERSION_MAJOR 3)
-set(NET_CPP_VERSION_MINOR 0)
-set(NET_CPP_VERSION_PATCH 0)
-
 include(CTest)
 
 include_directories(
