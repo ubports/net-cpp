@@ -39,17 +39,17 @@ progname=$(basename $0)
     exit 1
 }
 dir=$1
-version_dir=$(mktemp -d)
 
 [ -n "$dir" ] || dir="./debian"
 [ -n "$SERIES" ] || SERIES="$(lsb_release -c -s)"
 
 # Dump version numbers into files and initialize vars from those files.
-sh ${dir}/get-versions.sh ${dir} ${version_dir}
 
-export NET_CPP_SOVERSION=$(cat $version_dir/libnet-cpp.soversion)
-
-trap "rm -fr $version_dir" 0 INT TERM QUIT
+if [ "$SERIES" = "vivid" ]; then
+    NET_CPP_SOVERSION=$(cat ${dir}/VERSION.vivid)
+else
+    NET_CPP_SOVERSION=$(cat ${dir}/VERSION)
+fi
 
 process()
 {
@@ -57,9 +57,6 @@ process()
 }
 
 process "$dir/control.in" >"$dir/control"
-process "$dir/changelog.in" >"$dir/changelog"
-process "$dir/libnet-cpp.install.in" > "$dir/libnet-cpp${PROCESS_CPP_SOVERSION}.install"
-process "$dir/libnet-cpp-dev.install.in" > "$dir/libnet-cpp${PROCESS_CPP_SOVERSION}.dev"
-process "$dir/libnet-cpp-doc.install.in" > "$dir/libnet-cpp${PROCESS_CPP_SOVERSION}.doc"
+process "$dir/libnet-cpp.install.in" > "$dir/libnet-cpp${NET_CPP_SOVERSION}.install"
 
 exit 0

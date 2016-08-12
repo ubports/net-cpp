@@ -58,7 +58,7 @@ set_target_properties(
   LINK_FLAGS "${ldflags} -Wl,--version-script,${symbol_map}"
   LINK_DEPENDS ${symbol_map}
   VERSION ${NET_CPP_VERSION_MAJOR}.${NET_CPP_VERSION_MINOR}.${NET_CPP_VERSION_PATCH}
-  SOVERSION ${NET_CPP_VERSION_MAJOR}
+  SOVERSION ${NET_CPP_SOVERSION}
 )
 
 install(
