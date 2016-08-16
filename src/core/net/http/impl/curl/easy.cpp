@@ -442,18 +442,6 @@ void easy::Handle::perform()
     throw_if_not<curl::Code::ok>(easy::native::perform(native()), [this]() { return std::string{d->error};});
 }
 
-void easy::Handle::pause()
-{
-    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
-    throw_if_not<curl::Code::ok>(easy::native::pause(native(), CURLPAUSE_ALL), [this]() { return std::string{d->error};});
-}
-
-void easy::Handle::resume()
-{
-    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
-    throw_if_not<curl::Code::ok>(easy::native::pause(native(), CURLPAUSE_CONT), [this]() { return std::string{d->error};});
-}
-
 // URL escapes the given input string.
 std::string easy::Handle::escape(const std::string& in)
 {
@@ -474,6 +462,18 @@ void easy::Handle::notify_finished(curl::Code code)
 
     if (d->on_finished_cb)
         d->on_finished_cb(code);
+}
+
+void easy::Handle::pause()
+{
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+    throw_if_not<curl::Code::ok>(easy::native::pause(native(), CURLPAUSE_ALL), [this]() { return std::string{d->error};});
+}
+
+void easy::Handle::resume()
+{
+    if (!d) throw easy::Handle::HandleHasBeenAbandoned{};
+    throw_if_not<curl::Code::ok>(easy::native::pause(native(), CURLPAUSE_CONT), [this]() { return std::string{d->error};});
 }
 
 std::string easy::Handle::error() const

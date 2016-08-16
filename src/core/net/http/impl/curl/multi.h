@@ -140,9 +140,6 @@ public:
     // Queries statistics about the timing information of the last transfers.
     core::net::http::Client::Timings timings();
 
-    // Dispatch dispatches task on the underlying reactor.
-    void dispatch(const std::function<void()>& task);
-
     // Executes the underlying dispatcher executing the curl multi instance.
     // Can be called multiple times for thread-pool use-cases.
     void run();
@@ -173,6 +170,9 @@ public:
 
     // Returns the native curl multi instance handle.
     native::Handle native() const;
+
+    // Dispatch dispatches task on the underlying reactor.
+    void dispatch(const std::function<void()>& task);
 
 private:
     struct Private;

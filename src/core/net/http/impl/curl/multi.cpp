@@ -285,11 +285,6 @@ core::net::http::Client::Timings multi::Handle::timings()
     return result;
 }
 
-void multi::Handle::dispatch(const std::function<void ()> &task)
-{
-    d->dispatcher.post(task);
-}
-
 void multi::Handle::run()
 {
     d->dispatcher.run();
@@ -298,6 +293,11 @@ void multi::Handle::run()
 void multi::Handle::stop()
 {
     d->dispatcher.stop();
+}
+
+void multi::Handle::dispatch(const std::function<void ()> &task)
+{
+    d->dispatcher.post(task);
 }
 
 void multi::Handle::add(easy::Handle easy)

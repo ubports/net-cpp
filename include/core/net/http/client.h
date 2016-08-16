@@ -155,16 +155,6 @@ public:
      */
     virtual std::shared_ptr<Request> post(const Request::Configuration& configuration, const std::string& payload, const std::string& type) = 0;
 
-      /**
-      * @brief post is a convenience method for issuing a POST request for the given URI.
-      * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the pro vided HTTP method.
-      * @param configuration The configuration to issue a get request for.
-      * @param payload The data to be transmitted as part of the POST request.
-      * @param size Size of the payload data in bytes.
-      * @return An executable instance of class Request.
-      */
-      virtual std::shared_ptr<Request> post(const Request::Configuration& configuration, std::istream& payload, std::size_t size) = 0;
-
     /**
      * @brief post_form is a convenience method for issuing a POST request for the given URI, with url-encoded payload.
      * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
@@ -175,6 +165,16 @@ public:
     virtual std::shared_ptr<Request> post_form(const Request::Configuration& configuration, const std::map<std::string, std::string>& values);
 
     /**
+     * @brief post is a convenience method for issuing a POST request for the given URI.
+     * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the pro vided HTTP method.
+     * @param configuration The configuration to issue a get request for.
+     * @param payload The data to be transmitted as part of the POST request.
+     * @param size Size of the payload data in bytes.
+     * @return An executable instance of class Request.
+     */
+    virtual std::shared_ptr<Request> post(const Request::Configuration& configuration, std::istream& payload, std::size_t size) = 0;
+
+    /** 
      * @brief del is a convenience method for issueing a DELETE request for the given URI.
      * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
      * @param configuration The configuration to issue a get request for.

@@ -273,34 +273,6 @@ public:
         multi.add(easy);
     }
 
-    void pause()
-    {
-        auto copy = easy;
-        multi.dispatch([copy]() mutable
-        {
-            try
-            {
-                copy.pause();
-            }
-            catch(...) {}
-        });
-
-    }       
-
-    void resume()
-    {
-        auto copy = easy;
-        multi.dispatch([copy]() mutable
-        {
-            try
-            {
-                copy.resume();
-            }
-            catch(...) {}
-
-        });
-    }
-
     std::string url_escape(const std::string& s)
     {
         return easy.escape(s);
@@ -309,6 +281,41 @@ public:
     std::string url_unescape(const std::string& s)
     {
         return easy.unescape(s);
+    }
+
+    void pause()
+    {   
+        auto copy = easy;
+        multi.dispatch([copy]() mutable
+        {   
+            try 
+            {   
+                copy.pause();
+            }   
+            catch(...) {}
+        }); 
+    }    
+
+    void resume()
+    {   
+        auto copy = easy;
+        multi.dispatch([copy]() mutable
+        {   
+            try 
+            {   
+                copy.resume();
+            }   
+            catch(...) {}
+        }); 
+    }   
+
+    void abort_request_if(std::uint64_t limit, const std::chrono::seconds& time)
+    {   
+        if (atomic_state.load() != core::net::http::Request::State::ready)
+            throw core::net::http::Request::Errors::AlreadyActive{CORE_FROM_HERE()};
+    
+        easy.set_option(::curl::Option::low_speed_limit, limit);
+        easy.set_option(::curl::Option::low_speed_time, time.count());
     }
 
 private:

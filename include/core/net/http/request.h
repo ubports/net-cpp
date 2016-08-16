@@ -213,13 +213,6 @@ public:
             /** Invoked for querying user credentials to authenticate proxy accesses. */
             AuthenicationHandler for_proxy;
         } authentication_handler;
-
-        /** Encapsulates thresholds for minimum transfer speed in [kB/s] for duration seconds. */
-        struct
-        {
-            std::uint64_t limit{1};
-            std::chrono::seconds duration{std::chrono::seconds{30}};
-        } speed;
     };
 
     Request(const Request&) = delete;
@@ -256,19 +249,6 @@ public:
     virtual void async_execute(const Handler& handler) = 0;
 
     /**
-     * @brief Pause the request with options for aborting the request.
-     * The request will be aborted if transfer speed falls below \a limit in [bytes/second] for \a time seconds.
-     * @throw core::net::http::Error in case of http-related errors.
-     */
-    virtual void pause() = 0;
-
-    /**
-     * @brief Resume the request
-     * @throw core::net::http::Error in case of http-related errors.
-     */
-    virtual void resume() = 0;
-
-    /**
      * @brief Returns the input string in URL-escaped format.
      * @param s The string to be URL escaped.
      */
@@ -279,6 +259,27 @@ public:
      * @param s The string to be URL unescaped.
      */
     virtual std::string url_unescape(const std::string& s) = 0;
+
+    /** 
+     * @brief Pause the request with options for aborting the request.
+     * The request will be aborted if transfer speed falls below \a limit in [bytes/second] for \a time seconds.
+     * @throw core::net::http::Error in case of http-related errors.
+     */
+    virtual void pause() = 0;
+  
+    /** 
+     * @brief Resume the request
+     * @throw core::net::http::Error in case of http-related errors.
+     */
+    virtual void resume() = 0;
+
+    /**
+     * @brief Sets options for aborting the request.
+     * The request will be aborted if transfer speed belows \a limit bytes per second for \a time seconds
+     * @param limit The transfer speed in seconds.
+     * @param time waiting period(seconds) to abort the request.
+     */
+    virtual void abort_request_if(std::uint64_t limit, const std::chrono::seconds& time) = 0;
 
 protected:
     /** @cond */

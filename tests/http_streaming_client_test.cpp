@@ -711,6 +711,8 @@ TEST(StreamingHttpClient, request_can_be_paused_and_resumed)
 
     ProgressBar pb{80};
 
+    //set abort option for the request.
+    request->abort_request_if(1, std::chrono::seconds{30});
     // We finally execute the query asynchronously.
     request->async_execute(http::Request::Handler()
         .on_progress([&pb](const http::Request::Progress& progress)

@@ -36,11 +36,6 @@ namespace bai = boost::archive::iterators;
 namespace
 {
 const std::string BASE64_PADDING[] = { "", "==", "=" };
-template<typename To, typename From>
-To cast_without_overflow(From from)
-{
-    return static_cast<To>(std::min<From>(std::numeric_limits<To>::max(), from));
-}
 }
 
 http::impl::curl::Client::Client()
@@ -126,8 +121,6 @@ std::shared_ptr<http::impl::curl::Request> http::impl::curl::Client::head_impl(c
                       configuration.ssl.verify_host ? ::curl::easy::enable_ssl_host_verification : ::curl::easy::disable);
     handle.set_option(::curl::Option::ssl_verify_peer,
                       configuration.ssl.verify_peer ? ::curl::easy::enable : ::curl::easy::disable);
-    handle.set_option(::curl::Option::low_speed_limit, cast_without_overflow<long>(configuration.speed.limit));
-    handle.set_option(::curl::Option::low_speed_time, cast_without_overflow<long>(configuration.speed.duration.count()));
 
     if (configuration.authentication_handler.for_http)
     {
@@ -149,8 +142,6 @@ std::shared_ptr<http::impl::curl::Request> http::impl::curl::Client::get_impl(co
                       configuration.ssl.verify_host ? ::curl::easy::enable_ssl_host_verification : ::curl::easy::disable);
     handle.set_option(::curl::Option::ssl_verify_peer,
                       configuration.ssl.verify_peer ? ::curl::easy::enable : ::curl::easy::disable);
-    handle.set_option(::curl::Option::low_speed_limit, cast_without_overflow<long>(configuration.speed.limit));
-    handle.set_option(::curl::Option::low_speed_time, cast_without_overflow<long>(configuration.speed.duration.count()));
 
     if (configuration.authentication_handler.for_http)
     {
@@ -176,8 +167,6 @@ std::shared_ptr<http::impl::curl::Request> http::impl::curl::Client::post_impl(
                       configuration.ssl.verify_host ? ::curl::easy::enable_ssl_host_verification : ::curl::easy::disable);
     handle.set_option(::curl::Option::ssl_verify_peer,
                       configuration.ssl.verify_peer ? ::curl::easy::enable : ::curl::easy::disable);
-    handle.set_option(::curl::Option::low_speed_limit, cast_without_overflow<long>(configuration.speed.limit));
-    handle.set_option(::curl::Option::low_speed_time, cast_without_overflow<long>(configuration.speed.duration.count()));
 
     if (configuration.authentication_handler.for_http)
     {
@@ -203,16 +192,13 @@ std::shared_ptr<http::impl::curl::Request> http::impl::curl::Client::post_impl(
                 //to avoid client crashing when sending large chuck of data via POST method
                 auto result = payload.readsome(static_cast<char *>(dest), in_size * nmemb);
                 return result;            
-            }, size);
-    
+            }, size);   
     
     handle.set_option(::curl::Option::post_field_size, size);
     handle.set_option(::curl::Option::ssl_verify_host,
                       configuration.ssl.verify_host ? ::curl::easy::enable_ssl_host_verification : ::curl::easy::disable);
     handle.set_option(::curl::Option::ssl_verify_peer,
                       configuration.ssl.verify_peer ? ::curl::easy::enable : ::curl::easy::disable);
-    handle.set_option(::curl::Option::low_speed_limit, cast_without_overflow<long>(configuration.speed.limit));
-    handle.set_option(::curl::Option::low_speed_time, cast_without_overflow<long>(configuration.speed.duration.count()));
 
     if (configuration.authentication_handler.for_http)
     {
@@ -246,16 +232,13 @@ std::shared_ptr<http::impl::curl::Request> http::impl::curl::Client::post_impl(
 
                 //stop the current operation immediately
                 return (size_t)::curl::Code::no_readfunc_abort;
-            }, size);
-    
+            }, size);    
     
     handle.set_option(::curl::Option::post_field_size, size);
     handle.set_option(::curl::Option::ssl_verify_host,
                       configuration.ssl.verify_host ? ::curl::easy::enable_ssl_host_verification : ::curl::easy::disable);
     handle.set_option(::curl::Option::ssl_verify_peer,
                       configuration.ssl.verify_peer ? ::curl::easy::enable : ::curl::easy::disable);
-    handle.set_option(::curl::Option::low_speed_limit, cast_without_overflow<long>(configuration.speed.limit));
-    handle.set_option(::curl::Option::low_speed_time, cast_without_overflow<long>(configuration.speed.duration.count()));
 
     if (configuration.authentication_handler.for_http)
     {
@@ -287,8 +270,6 @@ std::shared_ptr<http::impl::curl::Request> http::impl::curl::Client::put_impl(
                       configuration.ssl.verify_host ? ::curl::easy::enable_ssl_host_verification : ::curl::easy::disable);
     handle.set_option(::curl::Option::ssl_verify_peer,
                       configuration.ssl.verify_peer ? ::curl::easy::enable : ::curl::easy::disable);
-    handle.set_option(::curl::Option::low_speed_limit, cast_without_overflow<long>(configuration.speed.limit));
-    handle.set_option(::curl::Option::low_speed_time, cast_without_overflow<long>(configuration.speed.duration.count()));
 
     if (configuration.authentication_handler.for_http)
     {
@@ -328,8 +309,6 @@ std::shared_ptr<http::impl::curl::Request> http::impl::curl::Client::put_impl(
                       configuration.ssl.verify_host ? ::curl::easy::enable_ssl_host_verification : ::curl::easy::disable);
     handle.set_option(::curl::Option::ssl_verify_peer,
                       configuration.ssl.verify_peer ? ::curl::easy::enable : ::curl::easy::disable);
-    handle.set_option(::curl::Option::low_speed_limit, cast_without_overflow<long>(configuration.speed.limit));
-    handle.set_option(::curl::Option::low_speed_time, cast_without_overflow<long>(configuration.speed.duration.count()));
 
     if (configuration.authentication_handler.for_http)
     {
@@ -351,8 +330,6 @@ std::shared_ptr<http::impl::curl::Request> http::impl::curl::Client::del_impl(co
                       configuration.ssl.verify_host ? ::curl::easy::enable_ssl_host_verification : ::curl::easy::disable);
     handle.set_option(::curl::Option::ssl_verify_peer,
                       configuration.ssl.verify_peer ? ::curl::easy::enable : ::curl::easy::disable);
-    handle.set_option(::curl::Option::low_speed_limit, cast_without_overflow<long>(configuration.speed.limit));
-    handle.set_option(::curl::Option::low_speed_time, cast_without_overflow<long>(configuration.speed.duration.count()));
 
     if (configuration.authentication_handler.for_http)
     {
@@ -378,26 +355,11 @@ std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_put(
     return put_impl(configuration, payload, size);
 }
 
-std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_put(const http::Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size)
-{
-    return put_impl(configuration, readdata_callback, size);
-}
-
 std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_post(const http::Request::Configuration& configuration, const std::string& payload, const std::string& type)
 {
     return post_impl(configuration, payload, type);
 }
 
-std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_post(const http::Request::Configuration& configuration, std::istream& payload, std::size_t size)
-{
-    return post_impl(configuration, payload, size);
-}
-
-std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_post(const http::Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size)
-{
-    return post_impl(configuration, readdata_callback, size);
-}
- 
 std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_post_form(const http::Request::Configuration& configuration, const std::map<std::string, std::string>& values)
 {
     std::stringstream ss;
@@ -410,6 +372,21 @@ std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_post
     }
 
     return post_impl(configuration, ss.str(), http::ContentType::x_www_form_urlencoded);
+}
+
+std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_post(const http::Request::Configuration& configuration, std::istream& payload, std::size_t   size)
+{
+    return post_impl(configuration, payload, size);
+}
+
+std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_post(const http::Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size)
+{
+    return post_impl(configuration, readdata_callback, size);
+}
+
+std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_put(const http::Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size)
+{
+    return put_impl(configuration, readdata_callback, size);
 }
 
 std::shared_ptr<http::StreamingRequest> http::impl::curl::Client::streaming_del(const http::Request::Configuration& configuration)
@@ -443,7 +420,8 @@ std::shared_ptr<http::Request> http::impl::curl::Client::post(
     return post_impl(configuration, payload, size);
 }
 
-std::shared_ptr<http::Request> http::impl::curl::Client::del(const Request::Configuration& configuration)
+std::shared_ptr<http::Request> http::impl::curl::Client::del(
+        const Request::Configuration& configuration)
 {
     return del_impl(configuration);
 }

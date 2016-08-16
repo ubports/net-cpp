@@ -16,9 +16,9 @@
 
 cmake_minimum_required(VERSION 3.0)
 
-project(net-cpp VERSION 3.0.0)
+project(net-cpp VERSION 1.3.0)
 
-set(NET_CPP_SOVERSION 4 CACHE STRING "The version number from libnet-cpp's SONAME")
+set(NET_CPP_SOVERSION 2 CACHE STRING "The version number from libnet-cpp's SONAME")
 
 find_package(Threads)
 

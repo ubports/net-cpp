@@ -347,12 +347,6 @@ public:
     // Executes the operation associated with this handle.
     void perform();
 
-    // Executes pause operation associated with this handle.
-    void pause();
-
-    // Executes resume operation associated with this handle.
-    void resume();
-
     // URL escapes the given input string.
     std::string escape(const std::string& in);
 
@@ -362,6 +356,12 @@ public:
     // Notifies this instance that the operation finished with 'code'.
     void notify_finished(curl::Code code);
 
+    // Executes pause operation associated with this handle.
+    void pause();
+  
+    // Executes resume operation associated with this handle.
+    void resume();
+	
 private:
     static int progress_cb(void* data, double dltotal, double dlnow, double ultotal, double ulnow);
     static std::size_t read_data_cb(void* data, std::size_t size, std::size_t nmemb, void *cookie);

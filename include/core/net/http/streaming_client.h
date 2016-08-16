@@ -62,17 +62,6 @@ public:
     virtual std::shared_ptr<StreamingRequest> streaming_put(const Request::Configuration& configuration, std::istream& payload, std::size_t size) = 0;
 
     /**
-    * @brief streaming_put is a convenience method for issuing a PUT request for the given URI.
-    * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
-    * @param configuration The configuration to issue a get request for.
-    * @param readdata_callback The callback function to read data in order to send it to the peer.
-    *        The data area pointed at by the pointer \a dest should be filled up with at most \a buf_size number of bytes.
-    * @param size Size of the payload data in bytes.
-    * @return An executable instance of class Request.
-    */
-    virtual std::shared_ptr<StreamingRequest> streaming_put(const Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size) = 0;
-
-    /**
     * @brief streaming_post is a convenience method for issuing a POST request for the given URI.
     * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
     * @param configuration The configuration to issue a get request for.
@@ -81,7 +70,16 @@ public:
     * @return An executable instance of class Request.
     */
     virtual std::shared_ptr<StreamingRequest> streaming_post(const Request::Configuration& configuration, const std::string& payload, const std::string& type) = 0;
-    
+
+    /**
+    * @brief streaming_post_form is a convenience method for issuing a POST request for the given URI, with url-encoded payload.
+    * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
+    * @param configuration The configuration to issue a get request for.
+    * @param values Key-value pairs to be added to the payload in url-encoded format.
+    * @return An executable instance of class Request.
+    */
+    virtual std::shared_ptr<StreamingRequest> streaming_post_form(const Request::Configuration& configuration, const std::map<std::string, std::string>& values) = 0;
+
     /**
     * @brief streaming_post is a convenience method for issuing a POST request for the given URI.
     * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the pro vided HTTP method.
@@ -102,17 +100,18 @@ public:
     * @return An executable instance of class Request.
     */
     virtual std::shared_ptr<StreamingRequest> streaming_post(const Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size) = 0;
-    
-    /**
-    * @brief streaming_post_form is a convenience method for issuing a POST request for the given URI, with url-encoded payload.
+      
+    /** 
+    * @brief streaming_put is a convenience method for issuing a PUT request for the given URI.
     * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
     * @param configuration The configuration to issue a get request for.
-    * @param values Key-value pairs to be added to the payload in url-encoded format.
+    * @param readdata_callback The callback function to read data in order to send it to the peer.
+    *        The data area pointed at by the pointer \a dest should be filled up with at most \a buf_size number of bytes.
+    * @param size Size of the payload data in bytes.
     * @return An executable instance of class Request.
     */
-    virtual std::shared_ptr<StreamingRequest> streaming_post_form(const Request::Configuration& configuration, const std::map<std::string, std::string>& values) = 0;
-
-
+    virtual std::shared_ptr<StreamingRequest> streaming_put(const Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size) = 0;
+  
     /**
     * @brief streaming_del is a convenience method for issuing a DELETE request for the given URI.
     * @throw Errors::HttpMethodNotSupported if the underlying implementation does not support the provided HTTP method.
