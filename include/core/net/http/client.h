@@ -172,7 +172,7 @@ public:
      * @param size Size of the payload data in bytes.
      * @return An executable instance of class Request.
      */
-    virtual std::shared_ptr<Request> post(const Request::Configuration& configuration, std::istream& payload, std::size_t size) = 0;
+    std::shared_ptr<Request> post(const Request::Configuration& configuration, std::istream& payload, std::size_t size);
 
     /** 
      * @brief del is a convenience method for issueing a DELETE request for the given URI.
@@ -180,7 +180,7 @@ public:
      * @param configuration The configuration to issue a get request for.
      * @return An executable instance of class Request.
      */
-    virtual std::shared_ptr<Request> del(const Request::Configuration& configuration) = 0;
+    std::shared_ptr<Request> del(const Request::Configuration& configuration);
 
 protected:
     Client() = default;

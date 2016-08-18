@@ -40,14 +40,14 @@ namespace net
 namespace http
 {
 // A regex for parsing key,value pairs from an http header line.
-std::regex header_line{"\\s*(\\S*)\\s*:\\s*(\\S*)\\s*"};
+static std::regex header_line{"\\s*(\\S*)\\s*:\\s*(\\S*)\\s*"};
 namespace impl
 {
 namespace curl
 {
 
 // See http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html
-std::tuple<std::string, std::string> parse_header_line(const char* line, std::size_t size)
+static std::tuple<std::string, std::string> parse_header_line(const char* line, std::size_t size)
 {
     std::cmatch matches;
 
@@ -57,7 +57,7 @@ std::tuple<std::string, std::string> parse_header_line(const char* line, std::si
     return std::make_tuple(matches.str(0), matches.str(1));
 }
 
-std::tuple<std::string, std::string, std::size_t> handle_header_line(void* data, std::size_t size, std::size_t nmemb)
+static std::tuple<std::string, std::string, std::size_t> handle_header_line(void* data, std::size_t size, std::size_t nmemb)
 {
     std::size_t length = size * nmemb;
     return std::tuple_cat(parse_header_line(static_cast<const char*>(data), length), std::make_tuple(length));

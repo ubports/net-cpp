@@ -64,8 +64,8 @@ public:
     std::shared_ptr<http::StreamingRequest> streaming_post(const Request::Configuration& configuration, const std::string& payload, const std::string& type) override;
     std::shared_ptr<http::StreamingRequest> streaming_post_form(const Request::Configuration& configuration, const std::map<std::string, std::string>& values) override;
 
-    std::shared_ptr<http::Request> post(const Request::Configuration& configuration, std::istream& payload, std::size_t size) override;
-    std::shared_ptr<http::Request> del(const Request::Configuration& configuration) override;
+    std::shared_ptr<http::Request> post(const Request::Configuration& configuration, std::istream& payload, std::size_t size);
+    std::shared_ptr<http::Request> del(const Request::Configuration& configuration);
     std::shared_ptr<http::StreamingRequest> streaming_post(const Request::Configuration& configuration, std::istream& payload, std::size_t size) override;
     std::shared_ptr<http::StreamingRequest> streaming_post(const Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size) override;
     std::shared_ptr<http::StreamingRequest> streaming_put(const Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size) override;
