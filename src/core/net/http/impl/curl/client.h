@@ -22,7 +22,6 @@
 #include <core/net/http/streaming_client.h>
 
 #include "curl.h"
-#include "request.h"
 
 namespace core
 {
@@ -34,6 +33,8 @@ namespace impl
 {
 namespace curl
 {
+class Request;
+
 class Client : public core::net::http::StreamingClient
 {
 public:
@@ -53,34 +54,34 @@ public:
 
     void stop() override;
 
-    std::shared_ptr<http::Request> get(const Request::Configuration& configuration) override;
-    std::shared_ptr<http::Request> head(const Request::Configuration& configuration) override;
-    std::shared_ptr<http::Request> post(const Request::Configuration& configuration, const std::string&, const std::string&) override;
-    std::shared_ptr<http::Request> put(const Request::Configuration& configuration, std::istream& payload, std::size_t size) override;
+    std::shared_ptr<http::Request> get(const http::Request::Configuration& configuration) override;
+    std::shared_ptr<http::Request> head(const http::Request::Configuration& configuration) override;
+    std::shared_ptr<http::Request> post(const http::Request::Configuration& configuration, const std::string&, const std::string&) override;
+    std::shared_ptr<http::Request> put(const http::Request::Configuration& configuration, std::istream& payload, std::size_t size) override;
 
-    std::shared_ptr<http::StreamingRequest> streaming_get(const Request::Configuration& configuration) override;
-    std::shared_ptr<http::StreamingRequest> streaming_head(const Request::Configuration& configuration) override;
-    std::shared_ptr<http::StreamingRequest> streaming_put(const Request::Configuration& configuration, std::istream& payload, std::size_t size) override;
-    std::shared_ptr<http::StreamingRequest> streaming_post(const Request::Configuration& configuration, const std::string& payload, const std::string& type) override;
-    std::shared_ptr<http::StreamingRequest> streaming_post_form(const Request::Configuration& configuration, const std::map<std::string, std::string>& values) override;
+    std::shared_ptr<http::StreamingRequest> streaming_get(const http::Request::Configuration& configuration) override;
+    std::shared_ptr<http::StreamingRequest> streaming_head(const http::Request::Configuration& configuration) override;
+    std::shared_ptr<http::StreamingRequest> streaming_put(const http::Request::Configuration& configuration, std::istream& payload, std::size_t size) override;
+    std::shared_ptr<http::StreamingRequest> streaming_post(const http::Request::Configuration& configuration, const std::string& payload, const std::string& type) override;
+    std::shared_ptr<http::StreamingRequest> streaming_post_form(const http::Request::Configuration& configuration, const std::map<std::string, std::string>& values) override;
 
-    std::shared_ptr<http::Request> post(const Request::Configuration& configuration, std::istream& payload, std::size_t size);
-    std::shared_ptr<http::Request> del(const Request::Configuration& configuration);
-    std::shared_ptr<http::StreamingRequest> streaming_post(const Request::Configuration& configuration, std::istream& payload, std::size_t size) override;
-    std::shared_ptr<http::StreamingRequest> streaming_post(const Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size) override;
-    std::shared_ptr<http::StreamingRequest> streaming_put(const Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size) override;
-    std::shared_ptr<http::StreamingRequest> streaming_del(const Request::Configuration& configuration) override;
+    std::shared_ptr<http::Request> post(const http::Request::Configuration& configuration, std::istream& payload, std::size_t size);
+    std::shared_ptr<http::Request> del(const http::Request::Configuration& configuration);
+    std::shared_ptr<http::StreamingRequest> streaming_post(const http::Request::Configuration& configuration, std::istream& payload, std::size_t size) override;
+    std::shared_ptr<http::StreamingRequest> streaming_post(const http::Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size) override;
+    std::shared_ptr<http::StreamingRequest> streaming_put(const http::Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size) override;
+    std::shared_ptr<http::StreamingRequest> streaming_del(const http::Request::Configuration& configuration) override;
 
 private:
-    std::shared_ptr<curl::Request> get_impl(const Request::Configuration& configuration);
-    std::shared_ptr<curl::Request> head_impl(const Request::Configuration& configuration);
-    std::shared_ptr<curl::Request> post_impl(const Request::Configuration& configuration, const std::string&, const std::string&);
-    std::shared_ptr<curl::Request> put_impl(const Request::Configuration& configuration, std::istream& payload, std::size_t size);
+    std::shared_ptr<curl::Request> get_impl(const http::Request::Configuration& configuration);
+    std::shared_ptr<curl::Request> head_impl(const http::Request::Configuration& configuration);
+    std::shared_ptr<curl::Request> post_impl(const http::Request::Configuration& configuration, const std::string&, const std::string&);
+    std::shared_ptr<curl::Request> put_impl(const http::Request::Configuration& configuration, std::istream& payload, std::size_t size);
 
-    std::shared_ptr<curl::Request> post_impl(const Request::Configuration& configuration, std::istream& payload, std::size_t size);
-    std::shared_ptr<curl::Request> post_impl(const Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size);
-    std::shared_ptr<curl::Request> put_impl(const Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size);
-    std::shared_ptr<curl::Request> del_impl(const Request::Configuration& configuration);
+    std::shared_ptr<curl::Request> post_impl(const http::Request::Configuration& configuration, std::istream& payload, std::size_t size);
+    std::shared_ptr<curl::Request> post_impl(const http::Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size);
+    std::shared_ptr<curl::Request> put_impl(const http::Request::Configuration& configuration, std::function<size_t(void *dest, std::size_t buf_size)> readdata_callback, std::size_t size);
+    std::shared_ptr<curl::Request> del_impl(const http::Request::Configuration& configuration);
 
     ::curl::multi::Handle multi;    
 };
