@@ -54,7 +54,7 @@ std::tuple<std::string, std::string> parse_header_line(const char* line, std::si
     if (not std::regex_match(line, line + size, matches, http::header_line))
         return std::make_tuple(std::string{}, std::string{});
 
-    return std::make_tuple(matches.str(0), matches.str(1));
+    return std::make_tuple(matches.str(1), matches.str(2));
 }
 
 std::tuple<std::string, std::string, std::size_t> handle_header_line(void* data, std::size_t size, std::size_t nmemb)

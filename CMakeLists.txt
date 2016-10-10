@@ -16,7 +16,7 @@
 
 cmake_minimum_required(VERSION 3.0)
 
-project(net-cpp VERSION 2.1.0)
+project(net-cpp VERSION 2.2.0)
 
 set(NET_CPP_SOVERSION 2 CACHE STRING "The version number from libnet-cpp's SONAME")
 
