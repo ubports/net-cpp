@@ -110,7 +110,7 @@ TEST(HttpClient, DISABLED_a_request_can_timeout)
     EXPECT_THROW(auto response = request->execute(default_progress_reporter), core::net::Error);
 }
 
-TEST(HttpClient, get_request_against_app_store_succeeds)
+TEST(HttpClient, DISABLED_get_request_against_app_store_succeeds)
 {
     auto client = http::make_client();
 
@@ -126,8 +126,6 @@ TEST(HttpClient, get_request_against_app_store_succeeds)
 
     response.header.enumerate([](const std::string& key, const std::set<std::string>& values)
     {
-        //check if the headers are parsed properly.
-        EXPECT_TRUE(key.find(":") == std::string::npos);
         for (const auto& value : values)
             std::cout << key << " -> " <<  value << std::endl;
     });
@@ -551,6 +549,63 @@ TEST(HttpClient, del_request_for_existing_resource_succeeds)
     EXPECT_EQ(core::net::http::Status::ok, response.status);
     EXPECT_TRUE(reader.parse(response.body, root));
     EXPECT_EQ(url, root["url"].asString());
+}
+
+TEST(HttpClient, async_get_request_for_http_headers_checking)
+{
+    // We obtain a default client instance, dispatching to the default implementation.
+    auto client = http::make_client();
+
+    // Execute the client
+    std::thread worker{[client]() { client->run(); }};
+
+    // Url pointing to the resource we would like to access via http.
+    auto url = std::string(httpbin::host) + httpbin::resources::get();
+
+    // The client mostly acts as a factory for http requests.
+    auto request = client->get(http::Request::Configuration::from_uri_as_string(url));
+
+    std::promise<core::net::http::Response> promise;
+    auto future = promise.get_future();
+
+    // We finally execute the query asynchronously.
+    request->async_execute(
+                http::Request::Handler()
+                    .on_progress(default_progress_reporter)
+                    .on_response([&](const core::net::http::Response& response)
+                    {
+                        promise.set_value(response);
+                    })
+                    .on_error([&](const core::net::Error& e)
+                    {
+                        promise.set_exception(std::make_exception_ptr(e));
+                    }));
+
+    auto response = future.get();
+
+    // All endpoint data on httpbin.org is JSON encoded.
+    json::Value root;
+    json::Reader reader;
+
+    // We expect the query to complete successfully
+    EXPECT_EQ(core::net::http::Status::ok, response.status);
+    // Parsing the body of the response as JSON should succeed.
+    EXPECT_TRUE(reader.parse(response.body, root));
+    // The url field of the payload should equal the original url we requested.
+    EXPECT_EQ(url, root["url"].asString());
+
+    //check if the headers are parsed properly.
+    auto headers = response.header;
+    
+    EXPECT_TRUE(headers.has("Access-Control-Allow-Origin", "*"));
+    EXPECT_TRUE(headers.has("Content-Length", "199"));
+    EXPECT_TRUE(headers.has("Content-Type", core::net::http::ContentType::json));
+
+    client->stop();
+
+    // We shut down our worker thread
+    if (worker.joinable())
+        worker.join();
 }
 
 namespace com
