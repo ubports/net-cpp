@@ -110,7 +110,7 @@ TEST(HttpClient, DISABLED_a_request_can_timeout)
     EXPECT_THROW(auto response = request->execute(default_progress_reporter), core::net::Error);
 }
 
-TEST(HttpClient, DISABLED_get_request_against_app_store_succeeds)
+TEST(HttpClient, get_request_against_app_store_succeeds)
 {
     auto client = http::make_client();
 
@@ -126,6 +126,8 @@ TEST(HttpClient, DISABLED_get_request_against_app_store_succeeds)
 
     response.header.enumerate([](const std::string& key, const std::set<std::string>& values)
     {
+        //check if the headers are parsed properly.
+        EXPECT_TRUE(key.find(":") == std::string::npos);
         for (const auto& value : values)
             std::cout << key << " -> " <<  value << std::endl;
     });
