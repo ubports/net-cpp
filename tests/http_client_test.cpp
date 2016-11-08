@@ -574,12 +574,14 @@ TEST(HttpClient, get_request_for_http_headers_checking)
     response.header.enumerate([](const std::string& key,
                                  const std::set<std::string>& values) {
         for (const auto& v: values) {
-            std::cout << "key: " << key <<"value: " << v << std::endl;
+            std::cout << "key: " << key <<"  value: " << v << std::endl;
         }
     });
 
+    //As value of "Content-Length" are different on xenial and zesty, 
+    //so we only check key and ignore value for it.
+    EXPECT_TRUE(headers.has("Content-Length"));
     EXPECT_TRUE(headers.has("Access-Control-Allow-Origin", "*"));
-    EXPECT_TRUE(headers.has("Content-Length", "199"));
     EXPECT_TRUE(headers.has("Content-Type", core::net::http::ContentType::json));
 }
 
