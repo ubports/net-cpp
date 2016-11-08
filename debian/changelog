@@ -1,10 +1,10 @@
-net-cpp (2.2.0+16.10.20160913.2-0ubuntu2) UNRELEASED; urgency=medium
+net-cpp (2.2.0+17.04.20161108.2-0ubuntu1) zesty; urgency=medium
 
   [ Gary Wang ]
   * Fix http header parsing in net response.
     (LP: #1631846)
 
- -- Gary.Wang <gary.wang@canonical.com>  Mon, 10 Oct 2016 13:06:17 +0800
+ -- Gary.Wang <gary.wang@canonical.com>  Tue, 08 Nov 2016 09:21:39 +0000
 
 net-cpp (2.1.0+16.10.20160913.2-0ubuntu1) yakkety; urgency=medium
 
