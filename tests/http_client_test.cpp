@@ -551,6 +551,40 @@ TEST(HttpClient, del_request_for_existing_resource_succeeds)
     EXPECT_EQ(url, root["url"].asString());
 }
 
+TEST(HttpClient, get_request_for_http_headers_checking)
+{
+    // We obtain a default client instance, dispatching to the default implementation.
+    auto client = http::make_client();
+
+    // Url pointing to the resource we would like to access via http.
+    auto url = std::string(httpbin::host) + httpbin::resources::get();
+
+    // The client mostly acts as a factory for http requests.
+    auto request = client->head(http::Request::Configuration::from_uri_as_string(url));
+
+    // We finally execute the query synchronously and story the response.
+    auto response = request->execute(default_progress_reporter);
+
+    // We expect the query to complete successfully
+    EXPECT_EQ(core::net::http::Status::ok, response.status);
+
+    //check if the headers are parsed properly.
+    auto headers = response.header;
+    
+    response.header.enumerate([](const std::string& key,
+                                 const std::set<std::string>& values) {
+        for (const auto& v: values) {
+            std::cout << "key: " << key <<"  value: " << v << std::endl;
+        }
+    });
+
+    //As value of "Content-Length" are different on xenial and zesty, 
+    //so we only check key and ignore value for it.
+    EXPECT_TRUE(headers.has("Content-Length"));
+    EXPECT_TRUE(headers.has("Access-Control-Allow-Origin", "*"));
+    EXPECT_TRUE(headers.has("Content-Type", core::net::http::ContentType::json));
+}
+
 namespace com
 {
 namespace mozilla
