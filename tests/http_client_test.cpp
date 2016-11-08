@@ -571,6 +571,13 @@ TEST(HttpClient, get_request_for_http_headers_checking)
     //check if the headers are parsed properly.
     auto headers = response.header;
     
+    response.header.enumerate([](const std::string& key,
+                                 const std::set<std::string>& values) {
+        for (const auto& v: values) {
+            std::cout << "key: " << key <<"value: " << v << std::endl;
+        }
+    });
+
     EXPECT_TRUE(headers.has("Access-Control-Allow-Origin", "*"));
     EXPECT_TRUE(headers.has("Content-Length", "199"));
     EXPECT_TRUE(headers.has("Content-Type", core::net::http::ContentType::json));
