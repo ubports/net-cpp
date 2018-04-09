@@ -9,5 +9,5 @@ include /usr/share/dpkg/default.mk
 export XDG_DATA_HOME=/tmp
 
 %:
-	dh $@ --fail-missing
+	dh $@ --fail-missing --parallel
 
