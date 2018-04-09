@@ -24,6 +24,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <functional>
 
 namespace core
 {

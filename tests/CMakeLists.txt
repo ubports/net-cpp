@@ -30,12 +30,7 @@ find_package(Threads)
 pkg_check_modules(JSON_CPP jsoncpp)
 pkg_check_modules(PROCESS_CPP process-cpp)
 
-# Build with system gmock and embedded gtest
-set (GMOCK_INCLUDE_DIR "/usr/include/gmock/include" CACHE PATH "gmock source include directory")
-set (GMOCK_SOURCE_DIR "/usr/src/gmock" CACHE PATH "gmock source directory")
-set (GTEST_INCLUDE_DIR "${GMOCK_SOURCE_DIR}/gtest/include" CACHE PATH "gtest source include directory")
-set (GMOCK_BOTH_LIBRARIES gmock gmock_main)
-add_subdirectory(${GMOCK_SOURCE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/gmock")
+find_package(GMock)
 
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -71,7 +66,7 @@ target_link_libraries(
 
     net-cpp
 
-    ${GMOCK_BOTH_LIBRARIES}
+    ${GMOCK_LIBRARIES}
     ${JSON_CPP_LDFLAGS}
     ${PROCESS_CPP_LDFLAGS}
 )
@@ -81,7 +76,7 @@ target_link_libraries(
 
     net-cpp
 
-    ${GMOCK_BOTH_LIBRARIES}
+    ${GMOCK_LIBRARIES}
     ${JSON_CPP_LDFLAGS}
     ${PROCESS_CPP_LDFLAGS}
 )
@@ -91,7 +86,7 @@ target_link_libraries(
 
     net-cpp
 
-    ${GMOCK_BOTH_LIBRARIES}
+    ${GMOCK_LIBRARIES}
     ${JSON_CPP_LDFLAGS}
     ${PROCESS_CPP_LDFLAGS}
 )
@@ -101,7 +96,7 @@ target_link_libraries(
 
     net-cpp
 
-    ${GMOCK_BOTH_LIBRARIES}
+    ${GMOCK_LIBRARIES}
     ${JSON_CPP_LDFLAGS}
     ${PROCESS_CPP_LDFLAGS}
 )
