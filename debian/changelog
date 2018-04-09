@@ -1,3 +1,9 @@
+net-cpp (2.2.1+ubports) bionic; urgency=medium
+
+  * Imported to UBports
+
+ -- UBports auto importer <infra@ubports.com>  Mon, 09 Apr 2018 14:48:49 +0200
+
 net-cpp (2.2.0+17.04.20161108.2-0ubuntu1) zesty; urgency=medium
 
   [ Gary Wang ]
